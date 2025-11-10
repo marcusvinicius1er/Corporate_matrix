@@ -358,6 +358,12 @@
       }
     ];
 
+    const normalizeLabel = (label = '') => label
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '');
+
     function calculateAmount(value, type, spreads) {
       if (typeof value !== 'number' || Number.isNaN(value)) return 0;
       return type.includes('fixed') ? value : value * spreads;
@@ -533,6 +539,8 @@
       window.print();
     });
 
+    render();
+
     (async function loadPrices() {
       try {
         const res = await fetch(SHEET_CSV, { cache: 'no-store' });
@@ -547,25 +555,26 @@
         rows.forEach(([section, label, type, price]) => {
           const cleaned = price.replace(/[^\d.-]/g, '');
           const numeric = cleaned === '' ? NaN : Number(cleaned);
-          if (!Number.isNaN(numeric)) {
-            byLabel.set(label.toLowerCase(), { type, price: numeric });
+          const slug = normalizeLabel(label);
+          if (!Number.isNaN(numeric) && slug) {
+            byLabel.set(slug, { type, price: numeric });
           }
         });
 
         const labelToKey = {
-          'corporate report project workshop': 'workshop_fixed',
-          'report creative concept & design': 'design_per_spread',
-          'digital-first integrated report layout – english': 'layout_en_per_spread',
-          'digital-first integrated report layout – arabic': 'layout_ar_per_spread',
-          'project management': 'pm_per_spread',
-          'native interactive pdf': 'interactive_pdf_per_spread',
-          'interactive flipbook': 'flipbook_per_spread',
-          'microsite': 'microsite_fixed',
-          'english proofreading': 'proofreading_per_spread'
+          [normalizeLabel('Corporate Report Project Workshop')]: 'workshop_fixed',
+          [normalizeLabel('Report Creative Concept & Design')]: 'design_per_spread',
+          [normalizeLabel('Digital-first Integrated Report Layout – English')]: 'layout_en_per_spread',
+          [normalizeLabel('Digital-first Integrated Report Layout – Arabic')]: 'layout_ar_per_spread',
+          [normalizeLabel('Project Management')]: 'pm_per_spread',
+          [normalizeLabel('Native Interactive PDF')]: 'interactive_pdf_per_spread',
+          [normalizeLabel('Interactive Flipbook')]: 'flipbook_per_spread',
+          [normalizeLabel('Microsite')]: 'microsite_fixed',
+          [normalizeLabel('English Proofreading')]: 'proofreading_per_spread'
         };
 
-        Object.entries(labelToKey).forEach(([label, key]) => {
-          const record = byLabel.get(label);
+        Object.entries(labelToKey).forEach(([slug, key]) => {
+          const record = byLabel.get(slug);
           if (record && key !== 'pm_per_spread') {
             PRICES[key] = record.price;
           }
