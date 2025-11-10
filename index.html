@@ -454,6 +454,9 @@
             if (spreads <= 0 && service.type.includes('fixed')) {
               amount = 0;
             }
+            if (service.id === 'base2' && spreads > 0) {
+              amount = Math.max(amount, 1800);
+            }
           }
         }
         amountById[service.id] = amount;
