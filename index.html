@@ -3,11 +3,172 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OXO Corporate Reporting – Pricing Matrix (Spreads)</title>
+  <title>OXO Corporate Reporting – Pricing Matrix</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="shared/styles.css">
+  <style>
+    :root{
+      --bg:#ffffff;
+      --ink:#0b1824;
+      --muted:#6f7b86;
+      --line:#e3ebf0;
+      --soft:#f6f9fb;
+      --soft2:#eef4f7;
+      --petrol:#0f4c5c;
+      --petrol-dark:#09323d;
+      --magenta:#d33fa0;
+      --gold:#c6a25a;
+    }
+    *,*:before,*:after{box-sizing:border-box}
+    body{margin:0;background:var(--soft);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+    .page{max-width:1180px;margin:40px auto 64px;padding:0 24px}
+    header{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-bottom:24px}
+    header img{height:60px;object-fit:contain;margin:auto 0}
+    .hero{flex:1 1 260px;background:linear-gradient(135deg,rgba(15,76,92,.96),#082733);color:#fff;padding:16px 22px;border-radius:16px;box-shadow:0 12px 28px rgba(9,46,57,.22)}
+    .hero h1{margin:0 0 6px;font:700 19px/1.25 Montserrat,sans-serif}
+    .hero p{margin:0;font-size:13px;opacity:.82}
+    .workspace{background:#fff;border-radius:20px;border:1px solid var(--line);box-shadow:0 30px 60px rgba(9,46,57,.08);padding:28px}
+    .toolbar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:14px 16px;border-radius:16px;background:linear-gradient(135deg,rgba(241,247,249,0.95),rgba(227,235,240,0.92));border:1px solid rgba(15,76,92,0.2)}
+    .controls label{font:700 12px/1 Montserrat;text-transform:uppercase;color:var(--petrol-dark);letter-spacing:.5px}
+    .controls input[type=number],.controls select{width:180px;padding:12px 14px;font:600 15px/1.1 Inter;border-radius:12px;border:1.5px solid var(--line);background:#fff;box-shadow:inset 0 1px 2px rgba(15,76,92,.05)}
+    .controls.is-missing input[type=number]{border-color:#d33f3f;background:#fff5f5}
+    .controls.is-missing label{color:#d33f3f}
+    .hint{font-size:12px;color:var(--muted)}
+    .hint.required{color:#d33f3f;font-weight:600}
+    .hint.required.hidden{display:none}
+    .btn{appearance:none;border-radius:12px;padding:11px 18px;font:700 13px/1 Montserrat;border:1px solid var(--petrol);color:var(--petrol);background:#fff;cursor:pointer;transition:all .2s ease}
+    .btn:hover{background:var(--petrol);color:#fff}
+    .btn:disabled{opacity:.45;cursor:not-allowed;background:#dbe4e9;color:#7f8b94;border-color:#dbe4e9}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:12px 10px;vertical-align:top;border-bottom:1px solid var(--line)}
+    th{text-align:left;font:600 11px/1.2 Montserrat;letter-spacing:.45px;color:#4a5e6a;text-transform:uppercase}
+    td{font-size:14px;color:var(--ink)}
+    .section-label{font:600 15px/1.3 Montserrat;margin-bottom:4px;color:var(--petrol-dark)}
+    .section-note{font-size:12px;line-height:1.5;color:var(--muted)}
+    .mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum";font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .right{text-align:right}
+    .stripe td{background:var(--soft2);font:700 14px/1 Montserrat}
+    .summary-row td{
+      background:linear-gradient(135deg,rgba(44,140,108,0.96),rgba(24,98,80,0.92));
+      color:#ffffff;
+      font:700 15px/1.2 Montserrat;
+      text-transform:uppercase;
+      border:0;
+      box-shadow:inset 0 0 0 2px rgba(22,108,85,0.65);
+    }
+    .summary-row td:first-child{border-radius:12px 0 0 12px;padding-left:16px}
+    .summary-row td:last-child{border-radius:0 12px 12px 0}
+    .opt-row td{background:#fbf7ff}
+    .opt-row--active td{background:#eef6f8}
+    .opt-flag{display:inline-block;margin-left:8px;font:700 10px/1 Montserrat;letter-spacing:.6px;color:var(--magenta)}
+    .opt-row--active .opt-flag{color:var(--petrol)}
+    .highlight-magenta{display:inline-block;padding:0 6px;border-radius:6px;background:rgba(211,63,160,.16);color:var(--magenta);font-weight:700}
+    .title-deliverable{display:block;margin-top:4px;font:600 11px/1.3 Montserrat;letter-spacing:.3px;color:var(--petrol-dark);text-transform:uppercase}
+    .center{text-align:center}
+    .include-cell{text-align:center}
+    .include-toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--petrol-dark)}
+    .include-toggle input{accent-color:var(--petrol)}
+    .include-toggle span{white-space:nowrap}
+    .tag-included{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(15,76,92,.12);font:600 12px/1 Inter;color:var(--petrol)}
+    .opt-quantity{font-weight:600;color:var(--petrol-dark)}
+    .totals-grid{margin:26px 0 18px;display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    .card{padding:18px;border-radius:16px;border:1px solid rgba(15,76,92,.12);background:linear-gradient(145deg,rgba(246,249,251,.96),rgba(255,255,255,.9))}
+    .card-heading{font:600 12px/1 Montserrat;text-transform:uppercase;letter-spacing:.45px;color:#3a4a52;margin-bottom:6px}
+    .card strong{display:block;font:700 22px/1.1 Montserrat;color:var(--petrol)}
+    .card small{display:block;margin-top:6px;font-size:12px;color:var(--muted)}
+    .grand{background:linear-gradient(135deg,rgba(211,63,160,.12),rgba(15,76,92,.08));border:1px solid rgba(211,63,160,.26)}
+    .grand strong{color:var(--magenta)}
+    .link-list{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+    .link-list li{margin:0}
+    .link-list a{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(15,76,92,.08);color:var(--petrol);font:600 12px/1 Montserrat;text-decoration:none;transition:all .2s ease}
+    .link-list a:hover{background:rgba(15,76,92,.16);color:var(--petrol-dark)}
+    .no-print{display:flex}
+    @media print{
+      @page{
+        margin:16mm 14mm 18mm;
+      }
+      body{
+        background:#ffffff;
+        color:#0b1824;
+        font-family:Inter,"Helvetica Neue",Arial,sans-serif;
+        font-size:13px;
+      }
+      .page{
+        max-width:none;
+        margin:0;
+        padding:0;
+      }
+      header{
+        margin-bottom:18px;
+        align-items:flex-start;
+      }
+      header img{
+        height:48px;
+      }
+      .hero{
+        background:linear-gradient(135deg,rgba(15,76,92,.12),rgba(8,39,51,.08));
+        color:#0b1824;
+        border:1px solid rgba(15,76,92,.2);
+        box-shadow:none;
+      }
+      .hero h1{
+        font-size:20px;
+        margin-bottom:8px;
+      }
+      .hero p{
+        font-size:12px;
+        opacity:.85;
+      }
+      .workspace{
+        box-shadow:none;
+        border:0;
+        padding:0;
+      }
+      .no-print{display:none !important}
+      .totals-grid{
+        grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+        gap:12px;
+        margin:0 0 16px;
+      }
+      .card{
+        border:1px solid rgba(15,76,92,.22);
+        background:#f5f8fa;
+        break-inside:avoid;
+        padding:16px;
+      }
+      .card strong{
+        font-size:20px;
+      }
+      table{
+        page-break-inside:avoid;
+        border:1px solid rgba(15,76,92,.18);
+        border-radius:12px;
+        overflow:hidden;
+      }
+      th,td{
+        background:#fff !important;
+        border-color:rgba(15,76,92,.18);
+        padding:10px 12px;
+      }
+      .summary-row td{
+        background:linear-gradient(135deg,rgba(44,140,108,.88),rgba(24,98,80,.82)) !important;
+        color:#fff !important;
+      }
+      .opt-row:not(.opt-row--active){display:none !important}
+      .include-toggle,
+      .tag-included{display:none !important}
+      #optionalTable.optional-empty{display:none !important}
+    }
+    @media(max-width:680px){
+      header{flex-direction:column}
+      .hero{width:100%}
+      .controls input[type=number]{width:100%}
+      .toolbar{align-items:stretch}
+      .btn{width:100%;justify-content:center}
+    }
+  </style>
 </head>
 <body>
   <div class="page">
@@ -40,17 +201,17 @@
       <div class="totals-grid">
         <div class="card">
           <div class="card-heading">Base package (1 → 5)</div>
-          <strong id="totalBase">USD 0</strong>
+          <strong id="totalBase">USD 0</strong>
           <small>Workshop, concept, layouts EN/AR, project management</small>
         </div>
         <div class="card">
           <div class="card-heading">Optional services</div>
-          <strong id="totalOptions">USD 0</strong>
+          <strong id="totalOptions">USD 0</strong>
           <small>Interactive PDF, flipbook, microsite, proofreading</small>
         </div>
         <div class="card grand">
           <div class="card-heading">Estimated project total</div>
-          <strong id="totalGrand">USD 0</strong>
+          <strong id="totalGrand">USD 0</strong>
           <small>Updated in real time according to your selections</small>
         </div>
       </div>
@@ -84,16 +245,53 @@
     </div>
   </div>
 
-  <script src="shared/matrix.js"></script>
   <script>
-    // Attendre que le DOM soit chargé
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
+    const PRICES = {
+      workshop_fixed: 300,
+      design_per_spread: 53,
+      layout_en_per_spread: 43,
+      layout_ar_per_spread: 47,
+      pm_per_spread: 24,
+      interactive_pdf_per_spread: 33,
+      flipbook_per_spread: 45,
+      microsite_fixed: 3800,
+      proofreading_per_spread: 37
+    };
 
-    function init() {
+    const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/1w9ni9chAIuGjorkZzLlYiqcy9hHl_cmUDDSiQPGiAx8/gviz/tq?tqx=out:csv&gid=619171879';
+
+    let currentCurrency = 'USD';
+    let exchangeRates = { USD: 1, AED: 1 }; // Taux par défaut = 1 si non trouvé dans le sheet
+
+    const fmt = (n, currency = currentCurrency) => {
+      return new Intl.NumberFormat('en-US', {style: 'currency', currency: currency, maximumFractionDigits: 0}).format(n);
+    };
+
+    const convertAmount = (amountUSD) => {
+      const rate = exchangeRates[currentCurrency] || 1;
+      return amountUSD * rate;
+    };
+
+    const spreadsEl = document.getElementById('spreads');
+    const exportBtn = document.getElementById('exportBtn');
+    const controlsBox = document.getElementById('spreadControl');
+    const spreadHint = document.getElementById('spreadHint');
+    const currencySelect = document.getElementById('currencySelect');
+    const rowsEl = document.getElementById('rows');
+    const rowsOptEl = document.getElementById('rowsOptional');
+    const optionalTable = document.getElementById('optionalTable');
+    const totalBaseEl = document.getElementById('totalBase');
+    const totalOptionsEl = document.getElementById('totalOptions');
+    const totalGrandEl = document.getElementById('totalGrand');
+
+    const toggles = {
+      opt6: false,
+      opt7: false,
+      opt8: false,
+      opt9: false
+    };
+    let includeArabic = true;
+
     const BASE_SERVICES = [
       {
         id: 'base1',
@@ -178,41 +376,269 @@
       }
     ];
 
-    initPricingMatrix({
-      defaultPrices: {
-        workshop_fixed: 300,
-        design_per_spread: 53,
-        layout_en_per_spread: 43,
-        layout_ar_per_spread: 47,
-        pm_per_spread: 24,
-        interactive_pdf_per_spread: 33,
-        flipbook_per_spread: 45,
-        microsite_fixed: 3800,
-        proofreading_per_spread: 37
-      },
-      sheetCsv: 'https://docs.google.com/spreadsheets/d/1w9ni9chAIuGjorkZzLlYiqcy9hHl_cmUDDSiQPGiAx8/gviz/tq?tqx=out:csv&gid=619171879',
-      baseServices: BASE_SERVICES,
-      optionalServices: OPTIONAL_SERVICES,
-      labelToKey: {
-        'corporate report project workshop': 'workshop_fixed',
-        'report creative concept & design': 'design_per_spread',
-        'digital-first integrated report layout – english': 'layout_en_per_spread',
-        'digital-first integrated report layout – arabic': 'layout_ar_per_spread',
-        'project management': 'pm_per_spread',
-        'native interactive pdf': 'interactive_pdf_per_spread',
-        'interactive flipbook': 'flipbook_per_spread',
-        'microsite': 'microsite_fixed',
-        'english proofreading': 'proofreading_per_spread'
-      },
-      inputId: 'spreads',
-      inputLabel: 'Number of spreads',
-      inputHint: '1 spread = 2 pages',
-      inputPlaceholder: 'Enter number',
-      unitLabel: { singular: 'spread', plural: 'spreads' },
-      defaultCurrency: 'USD',
-      currencies: ['USD', 'AED']
-    });
+    const normalizeLabel = (label = '') => label
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '');
+
+    function calculateAmount(value, type, spreads) {
+      if (typeof value !== 'number' || Number.isNaN(value)) return 0;
+      return type.includes('fixed') ? value : value * spreads;
     }
+
+    function formatQuantity(service, spreads) {
+      if (typeof service.quantity === 'function') {
+        return service.quantity(spreads);
+      }
+      if (service.type.includes('per_spread')) {
+        if (spreads <= 0) return '—';
+        const unit = spreads === 1 ? 'spread' : 'spreads';
+        return `${spreads} ${unit}`;
+      }
+      if (service.type.includes('fixed')) {
+        if (spreads <= 0) return '—';
+        return '1 project';
+      }
+      return '—';
+    }
+
+    function linkList(items) {
+      if (!items || !items.length) return '';
+      return `<ul class="link-list">${items.map(([label, url]) => `<li><a href="${url}" target="_blank" rel="noopener">${label}</a></li>`).join('')}</ul>`;
+    }
+
+    function row(title, desc, includeHtml, qty, amount) {
+      return `<tr>
+        <td>
+          <div class="section-label">${title}</div>
+          ${desc ? `<div class="section-note">${desc}</div>` : ''}
+        </td>
+        <td class="include-cell">${includeHtml}</td>
+        <td class="right">${qty}</td>
+        <td class="right mono">${fmt(amount)}</td>
+      </tr>`;
+    }
+
+    function optRow(service, detail, qty, amount, include) {
+      return `<tr class="opt-row${include ? ' opt-row--active' : ''}">
+        <td>
+          <div class="section-label">${service.title} <span class="opt-flag">OPTIONAL</span></div>
+          ${detail ? `<div class="section-note">${detail}</div>` : ''}
+        </td>
+        <td class="include-cell">
+          <label class="include-toggle">
+            <input type="checkbox" id="${service.id}" ${include ? 'checked' : ''}>
+            <span>Include</span>
+          </label>
+        </td>
+        <td class="right opt-quantity">${qty}</td>
+        <td class="right mono">${fmt(amount)}</td>
+      </tr>`;
+    }
+
+    function renderBaseRows(spreads, optionalTotals = {}) {
+      let subtotal = 0;
+      const amountByIdUSD = {};
+      const html = BASE_SERVICES.map(service => {
+        const unit = PRICES[service.key];
+        const isOptionalArabic = service.id === 'base4';
+        const isIncluded = isOptionalArabic ? includeArabic : true;
+        const includeMarkup = isOptionalArabic
+          ? `<label class="include-toggle"><input type="checkbox" id="includeArabic" ${includeArabic ? 'checked' : ''}><span>Include</span></label>`
+          : '<span class="tag-included">Included</span>';
+        const qtyRaw = formatQuantity(service, spreads);
+        let qtyDisplay = isIncluded ? qtyRaw : '—';
+        let amountUSD = 0;
+        let description = service.description;
+        if (service.id === 'base3' && spreads > 0 && typeof description === 'string') {
+          const spreadText = `${spreads} ${spreads === 1 ? 'spread' : 'spreads'}`;
+          description = description.replace(/50–75 spreads/gi, `${spreadText}`);
+        }
+
+        if (isIncluded) {
+          if (service.id === 'base5') {
+            const eligibleTotalUSD =
+              (amountByIdUSD['base2'] || 0) +
+              (amountByIdUSD['base3'] || 0) +
+              (amountByIdUSD['base4'] || 0) +
+              (optionalTotals['opt6'] || 0) +
+              (optionalTotals['opt7'] || 0) +
+              (optionalTotals['opt8'] || 0);
+            amountUSD = eligibleTotalUSD * 0.25;
+            qtyDisplay = '25%';
+          } else {
+            amountUSD = calculateAmount(unit, service.type, spreads);
+            if (spreads <= 0 && service.type.includes('fixed')) {
+              amountUSD = 0;
+            }
+            if (service.id === 'base2' && spreads > 0) {
+              amountUSD = Math.max(amountUSD, 1800);
+            }
+          }
+        }
+        amountByIdUSD[service.id] = amountUSD;
+        const amountDisplay = convertAmount(amountUSD);
+        subtotal += amountDisplay;
+        return row(service.title, description, includeMarkup, qtyDisplay, amountDisplay);
+      }).join('');
+
+      const subtotalRow = `<tr class="summary-row"><td colspan="3" class="right">TOTAL SECTIONS 1 TO 5</td><td class="right mono">${fmt(subtotal)}</td></tr>`;
+      return { html: html + subtotalRow, subtotal };
+    }
+
+    function renderOptionalRows(spreads) {
+      let total = 0;
+      let hasActive = false;
+      const totalsById = {};
+      const html = OPTIONAL_SERVICES.map(service => {
+        const unit = PRICES[service.key];
+        const quantityRaw = formatQuantity(service, spreads);
+        const include = Boolean(toggles[service.id]);
+        const qty = include ? quantityRaw : '—';
+        let amountUSD = include ? calculateAmount(unit, service.type, spreads) : 0;
+        const amountDisplay = convertAmount(amountUSD);
+        totalsById[service.id] = amountUSD;
+        if (include) {
+          total += amountDisplay;
+          hasActive = true;
+        }
+        const detail = service.description + (service.links ? linkList(service.links) : '');
+        return optRow(service, detail, qty, amountDisplay, include);
+      }).join('');
+      return { html, total, hasActive, totalsById };
+    }
+
+    function attachBaseHandlers() {
+      const checkbox = document.getElementById('includeArabic');
+      if (checkbox) {
+        checkbox.addEventListener('change', (event) => {
+          includeArabic = event.target.checked;
+          render();
+        });
+      }
+    }
+
+    function attachOptionHandlers() {
+      OPTIONAL_SERVICES.forEach(service => {
+        const checkbox = document.getElementById(service.id);
+        if (checkbox) {
+          checkbox.addEventListener('change', (event) => {
+            toggles[service.id] = event.target.checked;
+            render();
+          });
+        }
+      });
+    }
+
+    function render() {
+      const raw = (spreadsEl.value || '').trim();
+      const parsed = Number(raw);
+      const missing = raw === '' || Number.isNaN(parsed) || parsed <= 0;
+      const spreads = missing ? 0 : Math.max(0, parsed);
+
+      controlsBox.classList.toggle('is-missing', missing);
+      spreadHint.classList.toggle('hidden', !missing);
+      exportBtn.disabled = missing;
+
+      const optional = renderOptionalRows(spreads);
+      const base = renderBaseRows(spreads, optional.totalsById);
+
+      rowsEl.innerHTML = base.html;
+      rowsOptEl.innerHTML = optional.html;
+      optionalTable.classList.toggle('optional-empty', !optional.hasActive);
+
+      totalBaseEl.textContent = fmt(base.subtotal);
+      totalOptionsEl.textContent = fmt(optional.total);
+      totalGrandEl.textContent = fmt(base.subtotal + optional.total);
+
+      attachBaseHandlers();
+      attachOptionHandlers();
+    }
+
+    ['input','change','keyup','blur','paste'].forEach(evt => spreadsEl.addEventListener(evt, render));
+
+    if (currencySelect) {
+      currencySelect.addEventListener('change', (event) => {
+        currentCurrency = event.target.value;
+        render();
+      });
+    }
+
+    exportBtn.addEventListener('click', () => {
+      window.print();
+    });
+
+    render();
+
+    (async function loadPrices() {
+      try {
+        const res = await fetch(SHEET_CSV, { cache: 'no-store' });
+        if (!res.ok) throw new Error('fetch failed');
+        const csv = await res.text();
+        const lines = csv.trim().split(/\r?\n/);
+        lines.shift();
+        const rows = lines.map(line => line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(cell => cell.replace(/^\"|\"$/g, '').trim()))
+          .filter(cols => cols.length >= 4);
+
+        const byLabel = new Map();
+        rows.forEach(([section, label, type, price]) => {
+          const cleaned = price.replace(/[^\d.-]/g, '');
+          const numeric = cleaned === '' ? NaN : Number(cleaned);
+          const sectionUpper = (section || '').toUpperCase().trim();
+          const labelUpper = (label || '').toUpperCase().trim();
+          
+          // Table de conversion de devise depuis Google Sheet
+          // Format attendu: Section = "EXCHANGE_RATES", Label = "AED", Unit Price = taux (ex: 3.67)
+          const isExchangeRate = sectionUpper === 'EXCHANGE_RATES' || sectionUpper === 'EXCHANGE_RATE' || sectionUpper === 'RATES';
+          if (isExchangeRate) {
+            // Chercher le code devise dans le label (AED, USD, EUR, etc.)
+            const currencyCode = labelUpper.match(/\b(USD|AED|EUR|GBP|JPY|CHF|CAD|AUD)\b/);
+            if (currencyCode && !Number.isNaN(numeric)) {
+              exchangeRates[currencyCode[1]] = numeric;
+              console.log(`✓ Exchange rate loaded from Google Sheet: ${currencyCode[1]} = ${numeric}`);
+            } else if (labelUpper.trim() === 'AED' && !Number.isNaN(numeric)) {
+              // Fallback: si le label est exactement "AED"
+              exchangeRates['AED'] = numeric;
+              console.log(`✓ Exchange rate loaded (fallback): AED = ${numeric}`);
+            }
+          } else {
+            // Traitement des prix des services
+            const slug = normalizeLabel(label);
+            if (!Number.isNaN(numeric) && slug) {
+              byLabel.set(slug, { type, price: numeric });
+            }
+          }
+        });
+
+        const labelToKey = {
+          [normalizeLabel('Corporate Report Project Workshop')]: 'workshop_fixed',
+          [normalizeLabel('Report Creative Concept & Design')]: 'design_per_spread',
+          [normalizeLabel('Digital-first Integrated Report Layout – English')]: 'layout_en_per_spread',
+          [normalizeLabel('Digital-first Integrated Report Layout – Arabic')]: 'layout_ar_per_spread',
+          [normalizeLabel('Project Management')]: 'pm_per_spread',
+          [normalizeLabel('Native Interactive PDF')]: 'interactive_pdf_per_spread',
+          [normalizeLabel('Interactive Flipbook')]: 'flipbook_per_spread',
+          [normalizeLabel('Microsite')]: 'microsite_fixed',
+          [normalizeLabel('English Proofreading')]: 'proofreading_per_spread'
+        };
+
+        Object.entries(labelToKey).forEach(([slug, key]) => {
+          const record = byLabel.get(slug);
+          if (record && key !== 'pm_per_spread') {
+            PRICES[key] = record.price;
+          }
+        });
+        
+        console.log('Exchange rates loaded from Google Sheet:', exchangeRates);
+        if (currentCurrency === 'AED' && (!exchangeRates['AED'] || exchangeRates['AED'] === 1)) {
+          console.warn('⚠ AED exchange rate not found in Google Sheet. Add: Section=EXCHANGE_RATES, Label=AED, Unit Price=taux');
+        }
+      } catch (err) {
+        console.warn('Unable to load Google Sheet:', err);
+      }
+      render();
+    })();
   </script>
 </body>
 </html>
