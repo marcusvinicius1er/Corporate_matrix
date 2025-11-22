@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>OXO Corporate Reporting – Pricing Matrix (Spreads)</title>
+  <title>OXO Corporate Reporting – Pricing Matrix (Pages)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -15,23 +15,23 @@
       <img src="LOGO/OXO_CORPORATE_REPORTING_BLACK.png" alt="OXO Corporate Reporting">
       <div class="hero">
         <h1>Reporting Pricing Matrix</h1>
-        <p>Build accurate estimates by adjusting spreads and toggling optional services.</p>
+        <p>Build accurate estimates by adjusting pages and toggling optional services.</p>
       </div>
     </header>
 
     <div class="workspace">
       <div class="toolbar no-print">
-        <div class="controls" id="spreadControl">
-          <label for="spreads">Number of spreads</label>
-          <input id="spreads" type="number" min="0" step="1" value="" placeholder="Enter number" aria-label="Number of spreads" required>
-          <div class="hint">1 spread = 2 pages</div>
-          <div class="hint required hidden" id="spreadHint">Required field</div>
+        <div class="controls" id="pagesControl">
+          <label for="pages">Number of pages</label>
+          <input id="pages" type="number" min="0" step="1" value="" placeholder="Enter number" aria-label="Number of pages" required>
+          <div class="hint">Enter total number of pages</div>
+          <div class="hint required hidden" id="pagesHint">Required field</div>
         </div>
         <div class="controls">
           <label for="currencySelect">Currency</label>
           <select id="currencySelect" aria-label="Select currency">
             <option value="USD">USD</option>
-            <option value="AED">AED</option>
+            <option value="AED" selected>AED</option>
           </select>
         </div>
         <button class="btn" id="exportBtn" title="Export as PDF">Download PDF</button>
@@ -40,17 +40,17 @@
       <div class="totals-grid">
         <div class="card">
           <div class="card-heading">Base package (1 → 5)</div>
-          <strong id="totalBase">USD 0</strong>
+          <strong id="totalBase">AED 0</strong>
           <small>Workshop, concept, layouts EN/AR, project management</small>
         </div>
         <div class="card">
           <div class="card-heading">Optional services</div>
-          <strong id="totalOptions">USD 0</strong>
+          <strong id="totalOptions">AED 0</strong>
           <small>Interactive PDF, flipbook, microsite, proofreading</small>
         </div>
         <div class="card grand">
           <div class="card-heading">Estimated project total</div>
-          <strong id="totalGrand">USD 0</strong>
+          <strong id="totalGrand">AED 0</strong>
           <small>Updated in real time according to your selections</small>
         </div>
       </div>
@@ -86,14 +86,6 @@
 
   <script src="shared/matrix.js"></script>
   <script>
-    // Attendre que le DOM soit chargé
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
-
-    function init() {
     const BASE_SERVICES = [
       {
         id: 'base1',
@@ -106,29 +98,29 @@
       {
         id: 'base2',
         title: '2. Report Creative Concept & Design',
-        key: 'design_per_spread',
-        type: 'per_spread',
+        key: 'design_per_page',
+        type: 'per_page',
         description: 'Design proposals ×2, moodboards, visual concept mock-ups, icons, tables, diagrams & graphs.'
       },
       {
         id: 'base3',
         title: '3. Digital-first Integrated <span class="highlight-magenta">Report Layout English</span>.<span class="title-deliverable">Deliverable: HD Web PDF with hyperlinks</span>',
-        key: 'layout_en_per_spread',
-        type: 'per_spread',
-        description: 'HD web PDF with hyperlinks. Layout of integrated report – 50–75 spreads. Versioning per part (cover, executive messages, economic performance, sustainability, governance, workplace, community, environment, innovation/back cover).'
+        key: 'layout_en_per_page',
+        type: 'per_page',
+        description: 'HD web PDF with hyperlinks. Layout of integrated report – 100–150 pages. Versioning per part (cover, executive messages, economic performance, sustainability, governance, workplace, community, environment, innovation/back cover).'
       },
       {
         id: 'base4',
         title: '4. Digital-first Integrated <span class="highlight-magenta">Report Layout Arabic</span>.<span class="title-deliverable">Deliverable: HD Web PDF with hyperlinks</span>',
-        key: 'layout_ar_per_spread',
-        type: 'per_spread',
+        key: 'layout_ar_per_page',
+        type: 'per_page',
         description: 'Arabic version – identical structure, HD web PDF with hyperlinks.'
       },
       {
         id: 'base5',
         title: '5. Project Management',
-        key: 'pm_per_spread',
-        type: 'per_spread',
+        key: 'pm_per_page',
+        type: 'per_page',
         description: 'Dedicated project manager. Technical coordination & advisory (25% of design & layout).'
       }
     ];
@@ -137,8 +129,8 @@
       {
         id: 'opt6',
         title: '6. Native Interactive PDF (up to 8 animations)',
-        key: 'interactive_pdf_per_spread',
-        type: 'optional_per_spread',
+        key: 'interactive_pdf_per_page',
+        type: 'optional_per_page',
         description: 'Pre-defined animations per design proposal; offline interactivity.',
         links: [
           ['CIEL Integrated Report 2024', 'https://www.cielgroup.com/sites/default/files/2024-11/CIEL_%20Annual%20Integrated%20Report%20_2024.pdf'],
@@ -148,8 +140,8 @@
       {
         id: 'opt7',
         title: '7. Interactive Flipbook (up to 10 animations)',
-        key: 'flipbook_per_spread',
-        type: 'optional_per_spread',
+        key: 'flipbook_per_page',
+        type: 'optional_per_page',
         description: 'Interactive flipbook mirroring the report navigation.',
         links: [
           ['Publuu Flipbook #4712', 'https://publuu.com/flip-book/4712/9016/page/1?cover'],
@@ -172,8 +164,8 @@
       {
         id: 'opt9',
         title: '9. English Proofreading',
-        key: 'proofreading_per_spread',
-        type: 'optional_per_spread',
+        key: 'proofreading_per_page',
+        type: 'optional_per_page',
         description: 'Proofreading of non-financial sections (no copy-editing or re-writing).'
       }
     ];
@@ -181,38 +173,38 @@
     initPricingMatrix({
       defaultPrices: {
         workshop_fixed: 300,
-        design_per_spread: 53,
-        layout_en_per_spread: 43,
-        layout_ar_per_spread: 47,
-        pm_per_spread: 24,
-        interactive_pdf_per_spread: 33,
-        flipbook_per_spread: 45,
+        design_per_page: 26.5,
+        layout_en_per_page: 21.5,
+        layout_ar_per_page: 23.5,
+        pm_per_page: 12,
+        interactive_pdf_per_page: 16.5,
+        flipbook_per_page: 22.5,
         microsite_fixed: 3800,
-        proofreading_per_spread: 37
+        proofreading_per_page: 18.5
       },
       sheetCsv: 'https://docs.google.com/spreadsheets/d/1w9ni9chAIuGjorkZzLlYiqcy9hHl_cmUDDSiQPGiAx8/gviz/tq?tqx=out:csv&gid=619171879',
       baseServices: BASE_SERVICES,
       optionalServices: OPTIONAL_SERVICES,
       labelToKey: {
         'corporate report project workshop': 'workshop_fixed',
-        'report creative concept & design': 'design_per_spread',
-        'digital-first integrated report layout – english': 'layout_en_per_spread',
-        'digital-first integrated report layout – arabic': 'layout_ar_per_spread',
-        'project management': 'pm_per_spread',
-        'native interactive pdf': 'interactive_pdf_per_spread',
-        'interactive flipbook': 'flipbook_per_spread',
+        'report creative concept & design': 'design_per_page',
+        'digital-first integrated report layout – english': 'layout_en_per_page',
+        'digital-first integrated report layout – arabic': 'layout_ar_per_page',
+        'project management': 'pm_per_page',
+        'native interactive pdf': 'interactive_pdf_per_page',
+        'interactive flipbook': 'flipbook_per_page',
         'microsite': 'microsite_fixed',
-        'english proofreading': 'proofreading_per_spread'
+        'english proofreading': 'proofreading_per_page'
       },
-      inputId: 'spreads',
-      inputLabel: 'Number of spreads',
-      inputHint: '1 spread = 2 pages',
+      inputId: 'pages',
+      inputLabel: 'Number of pages',
+      inputHint: 'Enter total number of pages',
       inputPlaceholder: 'Enter number',
-      unitLabel: { singular: 'spread', plural: 'spreads' },
-      defaultCurrency: 'USD',
+      unitLabel: { singular: 'page', plural: 'pages' },
+      defaultCurrency: 'AED',
       currencies: ['USD', 'AED']
     });
-    }
   </script>
 </body>
 </html>
+
