@@ -1,10 +1,13 @@
 # Redirects pour Cloudflare Pages
 # Ce fichier permet de configurer des routes spécifiques
+# Documentation: https://developers.cloudflare.com/pages/configuration/redirects/
 
-# Pour la nouvelle application quote.oxo-reporting.ae
-# On peut utiliser un fichier _redirects ou configurer dans Cloudflare Pages
+# Note: Ce fichier s'applique à toutes les applications Pages du repository
+# Pour une configuration spécifique par application, utilisez Bulk Redirects dans Cloudflare Dashboard
 
-# Si vous créez une nouvelle application, vous pouvez configurer dans les settings :
-# Settings > Builds & deployments > Build configuration
-# Ou utiliser ce fichier _redirects pour rediriger la racine vers pages.html
+# Pour servir pages.html comme index (proxying avec code 200)
+# Cette règle servira pages.html quand on accède à la racine /
+# ATTENTION: Cela s'appliquera à TOUTES les applications Pages du repository
+# Si vous voulez que ce soit spécifique à quote.oxo-reporting.ae, utilisez Bulk Redirects dans Cloudflare Dashboard
+/  /pages.html  200
 
