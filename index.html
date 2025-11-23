@@ -206,8 +206,8 @@
         </div>
         <div class="card">
           <div class="card-heading">Optional services</div>
-          <strong id="totalOptions">USD 0</strong>
-          <small>Interactive PDF, flipbook, microsite, proofreading</small>
+          <strong id="totalOptions">USD 0</strong>
+          <small>Interactive PDF, flipbook, microsite</small>
         </div>
         <div class="card grand">
           <div class="card-heading">Estimated project total</div>
@@ -254,14 +254,16 @@
       pm_per_spread: 24,
       interactive_pdf_per_spread: 33,
       flipbook_per_spread: 45,
-      microsite_fixed: 3800,
-      proofreading_per_spread: 37
+      microsite_fixed: 3800
     };
 
     const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/1w9ni9chAIuGjorkZzLlYiqcy9hHl_cmUDDSiQPGiAx8/gviz/tq?tqx=out:csv&gid=619171879';
+    // Onglet "Devises" pour les taux de change - GID à remplacer par celui de l'onglet "Devises"
+    const CURRENCY_SHEET_CSV = 'https://docs.google.com/spreadsheets/d/1w9ni9chAIuGjorkZzLlYiqcy9hHl_cmUDDSiQPGiAx8/gviz/tq?tqx=out:csv&gid=1246682262';
 
     let currentCurrency = 'USD';
     let exchangeRates = { USD: 1, AED: 1 }; // Taux par défaut = 1 si non trouvé dans le sheet
+    let minimums = {}; // Minimums par service (ex: { 'design_per_spread': 1800 })
 
     const fmt = (n, currency = currentCurrency) => {
       return new Intl.NumberFormat('en-US', {style: 'currency', currency: currency, maximumFractionDigits: 0}).format(n);
@@ -269,6 +271,9 @@
 
     const convertAmount = (amountUSD) => {
       const rate = exchangeRates[currentCurrency] || 1;
+      if (currentCurrency !== 'USD') {
+        console.log(`Converting ${amountUSD} USD to ${currentCurrency} (rate: ${rate}) = ${amountUSD * rate}`);
+      }
       return amountUSD * rate;
     };
 
@@ -287,8 +292,7 @@
     const toggles = {
       opt6: false,
       opt7: false,
-      opt8: false,
-      opt9: false
+      opt8: false
     };
     let includeArabic = true;
 
@@ -366,13 +370,6 @@
           ['Velogic 2025', 'https://integratedreport.velogic.net/2025/']
         ],
         quantity: () => '1 project'
-      },
-      {
-        id: 'opt9',
-        title: '9. English Proofreading',
-        key: 'proofreading_per_spread',
-        type: 'optional_per_spread',
-        description: 'Proofreading of non-financial sections (no copy-editing or re-writing).'
       }
     ];
 
@@ -473,7 +470,10 @@
               amountUSD = 0;
             }
             if (service.id === 'base2' && spreads > 0) {
-              amountUSD = Math.max(amountUSD, 1800);
+              const minPrice = minimums[service.key];
+              if (minPrice && minPrice > 0) {
+                amountUSD = Math.max(amountUSD, minPrice);
+              }
             }
           }
         }
@@ -571,6 +571,45 @@
 
     render();
 
+    // Fonction pour charger les taux de change depuis l'onglet "Devises"
+    async function loadExchangeRates() {
+      try {
+        const res = await fetch(CURRENCY_SHEET_CSV, { cache: 'no-store' });
+        if (!res.ok) throw new Error('fetch failed');
+        const csv = await res.text();
+        const lines = csv.trim().split(/\r?\n/);
+        lines.shift();
+        const rows = lines.map(line => line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(cell => cell.replace(/^\"|\"$/g, '').trim()))
+          .filter(cols => cols.length >= 4);
+
+        rows.forEach(([section, label, type, price]) => {
+          // Gérer les nombres avec virgule (format européen) ou point (format US)
+          // Ex: "3,61" ou "3.61" → 3.61
+          let cleaned = (price || '').trim();
+          // Remplacer la virgule par un point pour le parsing
+          cleaned = cleaned.replace(/,/g, '.');
+          // Garder seulement les chiffres, points et tirets
+          cleaned = cleaned.replace(/[^\d.-]/g, '');
+          const numeric = cleaned === '' ? NaN : Number(cleaned);
+          const labelUpper = (label || '').toUpperCase().trim();
+          
+          // Détection du code devise dans le label (AED, EUR, etc.)
+          const currencyCode = labelUpper.match(/\b(USD|AED|EUR|GBP|JPY|CHF|CAD|AUD)\b/);
+          if (currencyCode && !Number.isNaN(numeric) && numeric > 0) {
+            exchangeRates[currencyCode[1]] = numeric;
+            console.log(`✓ Exchange rate loaded from "Devises" tab: ${currencyCode[1]} = ${numeric}`);
+          } else if (labelUpper.trim().match(/^(USD|AED|EUR|GBP|JPY|CHF|CAD|AUD)$/) && !Number.isNaN(numeric) && numeric > 0) {
+            // Si le label est directement un code devise
+            const code = labelUpper.trim();
+            exchangeRates[code] = numeric;
+            console.log(`✓ Exchange rate loaded (direct): ${code} = ${numeric}`);
+          }
+        });
+      } catch (err) {
+        console.warn('Unable to load exchange rates from "Devises" tab:', err);
+      }
+    }
+
     (async function loadPrices() {
       try {
         const res = await fetch(SHEET_CSV, { cache: 'no-store' });
@@ -583,31 +622,27 @@
 
         const byLabel = new Map();
         rows.forEach(([section, label, type, price]) => {
-          const cleaned = price.replace(/[^\d.-]/g, '');
+          // Gérer les nombres avec virgule (format européen) ou point (format US)
+          let cleaned = (price || '').trim();
+          cleaned = cleaned.replace(/,/g, '.'); // Convertir virgule en point
+          cleaned = cleaned.replace(/[^\d.-]/g, ''); // Garder seulement chiffres, points, tirets
           const numeric = cleaned === '' ? NaN : Number(cleaned);
-          const sectionUpper = (section || '').toUpperCase().trim();
-          const labelUpper = (label || '').toUpperCase().trim();
+          const slug = normalizeLabel(label);
           
-          // Table de conversion de devise depuis Google Sheet
-          // Format attendu: Section = "EXCHANGE_RATES", Label = "AED", Unit Price = taux (ex: 3.67)
-          const isExchangeRate = sectionUpper === 'EXCHANGE_RATES' || sectionUpper === 'EXCHANGE_RATE' || sectionUpper === 'RATES';
-          if (isExchangeRate) {
-            // Chercher le code devise dans le label (AED, USD, EUR, etc.)
-            const currencyCode = labelUpper.match(/\b(USD|AED|EUR|GBP|JPY|CHF|CAD|AUD)\b/);
-            if (currencyCode && !Number.isNaN(numeric)) {
-              exchangeRates[currencyCode[1]] = numeric;
-              console.log(`✓ Exchange rate loaded from Google Sheet: ${currencyCode[1]} = ${numeric}`);
-            } else if (labelUpper.trim() === 'AED' && !Number.isNaN(numeric)) {
-              // Fallback: si le label est exactement "AED"
-              exchangeRates['AED'] = numeric;
-              console.log(`✓ Exchange rate loaded (fallback): AED = ${numeric}`);
+          // Charger les minimums depuis la section "MINIMUMS"
+          const sectionUpper = (section || '').toUpperCase().trim();
+          if (sectionUpper === 'MINIMUMS' || sectionUpper === 'MINIMUM') {
+            const labelSlug = normalizeLabel(label);
+            const minKeyMap = {
+              [normalizeLabel('Report Creative Concept & Design')]: 'design_per_spread'
+            };
+            const minKey = minKeyMap[labelSlug];
+            if (minKey && !Number.isNaN(numeric) && numeric > 0) {
+              minimums[minKey] = numeric;
+              console.log(`✓ Minimum loaded from Google Sheet: ${minKey} = ${numeric}`);
             }
-          } else {
-            // Traitement des prix des services
-            const slug = normalizeLabel(label);
-            if (!Number.isNaN(numeric) && slug) {
-              byLabel.set(slug, { type, price: numeric });
-            }
+          } else if (!Number.isNaN(numeric) && slug) {
+            byLabel.set(slug, { type, price: numeric });
           }
         });
 
@@ -619,8 +654,7 @@
           [normalizeLabel('Project Management')]: 'pm_per_spread',
           [normalizeLabel('Native Interactive PDF')]: 'interactive_pdf_per_spread',
           [normalizeLabel('Interactive Flipbook')]: 'flipbook_per_spread',
-          [normalizeLabel('Microsite')]: 'microsite_fixed',
-          [normalizeLabel('English Proofreading')]: 'proofreading_per_spread'
+          [normalizeLabel('Microsite')]: 'microsite_fixed'
         };
 
         Object.entries(labelToKey).forEach(([slug, key]) => {
@@ -630,13 +664,23 @@
           }
         });
         
-        console.log('Exchange rates loaded from Google Sheet:', exchangeRates);
-        if (currentCurrency === 'AED' && (!exchangeRates['AED'] || exchangeRates['AED'] === 1)) {
-          console.warn('⚠ AED exchange rate not found in Google Sheet. Add: Section=EXCHANGE_RATES, Label=AED, Unit Price=taux');
-        }
+        console.log('Prices loaded from Google Sheet');
       } catch (err) {
         console.warn('Unable to load Google Sheet:', err);
       }
+      
+      // Charger les taux de change depuis l'onglet "Devises"
+      await loadExchangeRates();
+      
+      console.log('Exchange rates loaded:', exchangeRates);
+      if (!exchangeRates['AED'] || exchangeRates['AED'] === 1) {
+        console.error('❌ AED exchange rate NOT FOUND in "Devises" tab!');
+        console.error('Check that the "Devises" tab contains: Label=AED, Unit Price=taux');
+        console.error('Current exchangeRates:', exchangeRates);
+      } else {
+        console.log('✓ AED rate loaded:', exchangeRates['AED']);
+      }
+      
       render();
     })();
   </script>

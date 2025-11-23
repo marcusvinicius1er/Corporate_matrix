@@ -27,6 +27,25 @@ Le Google Sheet doit exporter un CSV avec les colonnes suivantes :
 **Exemple** : Si `AED = 3.67`, cela signifie **1 USD = 3.67 AED**
 - Quand l'utilisateur sélectionne AED, tous les prix USD sont **multipliés par 3.67**
 
+## Table des minimums
+
+Pour certains services, vous pouvez définir un prix minimum qui s'appliquera même si le calcul (prix unitaire × quantité) donne un montant inférieur.
+
+| Section | Label | Type | Unit Price (USD) |
+|---------|-------|------|-------------------|
+| **MINIMUMS** | **Report Creative Concept & Design** | (peu importe) | **1800** |
+
+### Format de la table des minimums
+
+- **Section** : Doit être exactement `MINIMUMS` (ou `MINIMUM`)
+- **Label** : Libellé exact du service (doit correspondre au label dans la section principale)
+- **Type** : Peu importe (peut être vide)
+- **Unit Price (USD)** : **Prix minimum** en USD
+
+**Exemple** : Si le minimum pour "Report Creative Concept & Design" est `1800`, alors :
+- Avec 3 spreads à 53$ par spread = 159$ → **le minimum de 1800$ s'applique**
+- Avec 50 spreads à 53$ par spread = 2650$ → **le calcul normal s'applique (2650$)**
+
 ## Structure complète recommandée
 
 ```
@@ -42,13 +61,16 @@ Section,Label,Type,Unit Price (USD)
 9,English Proofreading,optional_per_spread,37
 EXCHANGE_RATES,AED,,3.67
 EXCHANGE_RATES,EUR,,0.92
+MINIMUMS,Report Creative Concept & Design,,1800
 ```
 
 ## Notes importantes
 
 - **Tous les prix dans le sheet sont en USD** (colonne "Unit Price (USD)")
 - La table `EXCHANGE_RATES` permet de convertir ces prix USD vers d'autres devises
-- Le taux de change est mis à jour automatiquement à chaque chargement de la page
+- La table `MINIMUMS` permet de définir des prix minimums pour certains services
+- Le taux de change et les minimums sont mis à jour automatiquement à chaque chargement de la page
 - Si un taux n'est pas trouvé, la valeur par défaut est `1` (pas de conversion)
+- Si un minimum n'est pas trouvé, aucun minimum ne s'applique (le calcul normal est utilisé)
 - USD est toujours la devise de base (taux = 1, pas besoin de le définir)
 

@@ -1,0 +1,10 @@
+# Redirects pour Cloudflare Pages
+# Ce fichier permet de configurer des routes spécifiques
+
+# Pour la nouvelle application quote.oxo-reporting.ae
+# On peut utiliser un fichier _redirects ou configurer dans Cloudflare Pages
+
+# Si vous créez une nouvelle application, vous pouvez configurer dans les settings :
+# Settings > Builds & deployments > Build configuration
+# Ou utiliser ce fichier _redirects pour rediriger la racine vers pages.html
+
