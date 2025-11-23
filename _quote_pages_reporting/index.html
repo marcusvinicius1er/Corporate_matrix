@@ -439,17 +439,34 @@
   <!-- Main Application Script (only runs if authenticated) -->
   <script>
     function initApp() {
+    // Structure pour stocker les prix par tranche (tier1: 1-80, tier2: 81-200, tier3: >200)
+    // Tous les prix seront chargés dynamiquement depuis le Google Sheet - aucune valeur codée en dur
     const PRICES = {
-      workshop_fixed: 300,
-      design_per_page: 53,
-      layout_en_per_page: 83,
-      financial_en_per_page: 30,
-      layout_ar_per_page: 30,
-      pm_per_page: 0, // 25% calculé dynamiquement
-      interactive_pdf_per_page: 33,
-      flipbook_per_page: 45,
-      microsite_fixed: 6000
+      workshop_fixed: {},
+      design_fixed: {},
+      layout_en_per_page: {},
+      financial_en_per_page: {},
+      layout_ar_per_page: {},
+      pm_percentage: {},
+      interactive_pdf_per_page: {},
+      flipbook_per_page: {},
+      microsite_fixed: {}
     };
+
+    // Fonction pour déterminer la tranche selon le nombre de pages
+    function getTier(pages) {
+      if (pages <= 80) return 'tier1';
+      if (pages <= 200) return 'tier2';
+      return 'tier3';
+    }
+
+    // Fonction pour obtenir le prix selon la tranche
+    function getPrice(priceObj, pages) {
+      if (!priceObj) return 0;
+      if (priceObj.fixed !== undefined) return priceObj.fixed;
+      const tier = getTier(pages);
+      return priceObj[tier] || 0;
+    }
 
     const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/1w9ni9chAIuGjorkZzLlYiqcy9hHl_cmUDDSiQPGiAx8/gviz/tq?tqx=out:csv&gid=441790827';
     // Onglet "Devises" pour les taux de change - GID à remplacer par celui de l'onglet "Devises"
@@ -507,8 +524,8 @@
       {
         id: 'base2',
         title: '2. Report Creative Concept & Design',
-        key: 'design_per_page',
-        type: 'per_page',
+        key: 'design_fixed',
+        type: 'fixed',
         description: 'Design proposals ×2, moodboards, visual concept mock-ups, icons, tables, diagrams & graphs.',
         hasSpecificPages: false
       },
@@ -539,9 +556,9 @@
       {
         id: 'base6',
         title: '6. Project Management',
-        key: 'pm_per_page',
-        type: 'per_page',
-        description: 'Dedicated project manager. Technical coordination & advisory (25% of design & layout).',
+        key: 'pm_percentage',
+        type: 'percentage',
+        description: 'Dedicated project manager. Technical coordination & advisory.',
         hasSpecificPages: false
       }
     ];
@@ -590,12 +607,20 @@
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '');
 
-    function calculateAmount(value, type, pages) {
-      if (typeof value !== 'number' || Number.isNaN(value)) return 0;
-      return type.includes('fixed') ? value : value * pages;
+    function calculateAmount(priceObj, type, pages, totalPagesForTier = null) {
+      if (!priceObj) return 0;
+      // Utiliser totalPagesForTier pour déterminer la tranche si fourni, sinon utiliser pages
+      const tierPages = totalPagesForTier !== null ? totalPagesForTier : pages;
+      const price = getPrice(priceObj, tierPages);
+      if (typeof price !== 'number' || Number.isNaN(price)) return 0;
+      return type.includes('fixed') ? price : price * pages;
     }
 
     function formatQuantity(service, pages) {
+      // Ne pas afficher de quantité pour Project Management (percentage)
+      if (service.type === 'percentage') {
+        return '—';
+      }
       if (typeof service.quantity === 'function') {
         return service.quantity(pages);
       }
@@ -686,7 +711,8 @@
 
         if (isIncluded) {
           if (service.id === 'base6') {
-            // Project Management = 25% de base2, base3, base4 + optionnels
+            // Project Management = pourcentage depuis la matrice de base2, base3, base4 + optionnels
+            // Utiliser le nombre total de pages pour déterminer la tranche
             const eligibleTotalUSD =
               (amountByIdUSD['base2'] || 0) +
               (amountByIdUSD['base3'] || 0) +
@@ -694,18 +720,24 @@
               (optionalTotals['opt7'] || 0) +
               (optionalTotals['opt8'] || 0) +
               (optionalTotals['opt9'] || 0);
-            amountUSD = eligibleTotalUSD * 0.25;
-            qtyDisplay = '25%';
-          } else {
-            amountUSD = calculateAmount(unit, service.type, pagesToUse);
-            if (pagesToUse <= 0 && service.type.includes('fixed')) {
+            const pmPercentage = getPrice(unit, pages); // Utiliser pages (total) pour la tranche
+            amountUSD = eligibleTotalUSD * pmPercentage;
+            // FORCER l'affichage à "—" pour ne pas afficher le pourcentage
+            qtyDisplay = '—';
+          } else if (service.id === 'base2') {
+            // Section 2 (Creative Concept) : prix fixe (flat rate) depuis la matrice selon la tranche
+            // C'est un prix fixe, pas un prix par page - unité = 1, on utilise juste le nombre total de pages pour déterminer la tranche
+            // Ne PAS multiplier par pages, c'est un prix fixe
+            amountUSD = getPrice(unit, pages); // Prix fixe selon la tranche (1-80, 81-200, >200) - unité = 1
+            if (pages <= 0) {
               amountUSD = 0;
             }
-            if (service.id === 'base2' && pages > 0) {
-              const minPrice = minimums[service.key];
-              if (minPrice && minPrice > 0) {
-                amountUSD = Math.max(amountUSD, minPrice);
-              }
+            qtyDisplay = '1'; // Unité = 1 pour un prix fixe
+          } else {
+            // Pour les services per_page, utiliser pagesToUse pour le calcul mais pages (total) pour la tranche
+            amountUSD = calculateAmount(unit, service.type, pagesToUse, pages);
+            if (pagesToUse <= 0 && service.type.includes('fixed')) {
+              amountUSD = 0;
             }
             qtyDisplay = formatQuantity(service, pagesToUse);
           }
@@ -732,7 +764,8 @@
         const quantityRaw = formatQuantity(service, pages);
         const include = Boolean(toggles[service.id]);
         const qty = include ? quantityRaw : '—';
-        let amountUSD = include ? calculateAmount(unit, service.type, pages) : 0;
+        // Utiliser pages pour le calcul ET pour déterminer la tranche
+        let amountUSD = include ? calculateAmount(unit, service.type, pages, pages) : 0;
         const amountDisplay = convertAmount(amountUSD);
         totalsById[service.id] = amountUSD;
         if (include) {
@@ -881,43 +914,80 @@
         if (!res.ok) throw new Error('fetch failed');
         const csv = await res.text();
         const lines = csv.trim().split(/\r?\n/);
-        lines.shift();
+        lines.shift(); // Skip header
         const rows = lines.map(line => line.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(cell => cell.replace(/^\"|\"$/g, '').trim()))
           .filter(cols => cols.length >= 4);
 
         const byLabel = new Map();
-        rows.forEach(([section, label, type, price]) => {
-          // Gérer les nombres avec virgule (format européen) ou point (format US)
-          let cleaned = (price || '').trim();
-          cleaned = cleaned.replace(/,/g, '.'); // Convertir virgule en point
-          cleaned = cleaned.replace(/[^\d.-]/g, ''); // Garder seulement chiffres, points, tirets
-          const numeric = cleaned === '' ? NaN : Number(cleaned);
+        rows.forEach(([section, label, type, priceUSD, tier1, tier2, tier3]) => {
           const slug = normalizeLabel(label);
           
+          // Fonction helper pour parser un prix (peut être un nombre ou un pourcentage)
+          function parsePrice(value) {
+            if (!value) return NaN;
+            let cleaned = value.trim();
+            // Si c'est un pourcentage (contient %), convertir en décimal
+            if (cleaned.includes('%')) {
+              cleaned = cleaned.replace(/%/g, '').trim();
+              cleaned = cleaned.replace(/,/g, '.');
+              const num = Number(cleaned);
+              return isNaN(num) ? NaN : num / 100; // Convertir 25% en 0.25
+            }
+            // Sinon, traiter comme un nombre
+            cleaned = cleaned.replace(/,/g, '.');
+            cleaned = cleaned.replace(/[^\d.-]/g, '');
+            return cleaned === '' ? NaN : Number(cleaned);
+          }
+
           // Charger les minimums depuis la section "MINIMUMS"
           const sectionUpper = (section || '').toUpperCase().trim();
           if (sectionUpper === 'MINIMUMS' || sectionUpper === 'MINIMUM') {
             const labelSlug = normalizeLabel(label);
             const minKeyMap = {
-              [normalizeLabel('Report Creative Concept & Design')]: 'design_per_page'
+              [normalizeLabel('Report Creative Concept & Design')]: 'design_fixed'
             };
             const minKey = minKeyMap[labelSlug];
+            const numeric = parsePrice(priceUSD);
             if (minKey && !Number.isNaN(numeric) && numeric > 0) {
               minimums[minKey] = numeric;
               console.log(`✓ Minimum loaded from Google Sheet: ${minKey} = ${numeric}`);
             }
-          } else if (!Number.isNaN(numeric) && slug) {
-            byLabel.set(slug, { type, price: numeric });
+          } else if (slug) {
+            // Charger les prix par tranche
+            const priceData = {};
+            const tier1Price = parsePrice(tier1 || priceUSD);
+            const tier2Price = parsePrice(tier2 || tier1 || priceUSD);
+            const tier3Price = parsePrice(tier3 || tier2 || tier1 || priceUSD);
+            
+            if (type && type.toLowerCase().includes('fixed')) {
+              // Pour les prix fixes, utiliser les tranches comme valeurs fixes
+              if (!Number.isNaN(tier1Price)) priceData.tier1 = tier1Price;
+              if (!Number.isNaN(tier2Price)) priceData.tier2 = tier2Price;
+              if (!Number.isNaN(tier3Price)) priceData.tier3 = tier3Price;
+              // Si une seule valeur, utiliser fixed
+              if (tier1Price === tier2Price && tier2Price === tier3Price && !Number.isNaN(tier1Price)) {
+                priceData.fixed = tier1Price;
+              }
+            } else {
+              // Pour les prix par page ou pourcentages, utiliser les tranches
+              if (!Number.isNaN(tier1Price)) priceData.tier1 = tier1Price;
+              if (!Number.isNaN(tier2Price)) priceData.tier2 = tier2Price;
+              if (!Number.isNaN(tier3Price)) priceData.tier3 = tier3Price;
+            }
+            
+            if (Object.keys(priceData).length > 0) {
+              byLabel.set(slug, { type, priceData });
+            }
           }
         });
 
         const labelToKey = {
           [normalizeLabel('Corporate Report Project Workshop')]: 'workshop_fixed',
-          [normalizeLabel('Report Creative Concept & Design')]: 'design_per_page',
+          [normalizeLabel('Report Creative Concept & Design')]: 'design_fixed',
           [normalizeLabel('Integrated Report Layout – English')]: 'layout_en_per_page',
           [normalizeLabel('Integrated Report Financial section – English')]: 'financial_en_per_page',
           [normalizeLabel('Integrated Report Layout – Arabic')]: 'layout_ar_per_page',
-          [normalizeLabel('Project Management')]: 'pm_per_page',
+          [normalizeLabel('Project Management')]: 'pm_percentage',
           [normalizeLabel('Native Interactive PDF')]: 'interactive_pdf_per_page',
           [normalizeLabel('Interactive Flipbook')]: 'flipbook_per_page',
           [normalizeLabel('Microsite')]: 'microsite_fixed'
@@ -925,12 +995,13 @@
 
         Object.entries(labelToKey).forEach(([slug, key]) => {
           const record = byLabel.get(slug);
-          if (record && key !== 'pm_per_page') {
-            PRICES[key] = record.price;
+          if (record && record.priceData) {
+            PRICES[key] = record.priceData;
+            console.log(`✓ Loaded ${key}:`, record.priceData);
           }
         });
         
-        console.log('Prices loaded from Google Sheet');
+        console.log('Prices loaded from Google Sheet with tiered pricing');
       } catch (err) {
         console.warn('Unable to load Google Sheet:', err);
       }
