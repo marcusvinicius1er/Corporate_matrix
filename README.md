@@ -2,51 +2,53 @@
 
 Site de matrice de tarification pour les rapports d'entreprise.
 
-## Structure
+## Structure du projet
 
-- `index.html` : Matrice de tarification basée sur les spreads (USD par défaut)
-- `pages.html` : Matrice de tarification basée sur les pages (AED par défaut)
+Le projet est organisé en deux sites distincts :
+
+### `matrix-spreads/`
+- **Fichier principal** : `index.html`
+- **URL** : `https://matrix.oxo-reporting.ae/`
+- **Type** : Matrice de tarification basée sur les **spreads** (USD par défaut)
+- **Configuration Cloudflare Pages** :
+  - Root directory : `/matrix-spreads`
+  - Build output directory : `/`
+
+### `matrix-pages/`
+- **Fichier principal** : `index.html` (anciennement `pages.html`)
+- **URL** : `https://quote.oxo-reporting.ae/`
+- **Type** : Matrice de tarification basée sur les **pages** (AED par défaut)
+- **Configuration Cloudflare Pages** :
+  - Root directory : `/matrix-pages`
+  - Build output directory : `/`
 
 ## Déploiement sur Cloudflare Pages
 
-### Étapes pour créer le projet dans Cloudflare Pages :
+### Application 1 : matrix-spreads
 
-1. **Connecter le repository Git** :
-   - Allez sur [Cloudflare Dashboard](https://dash.cloudflare.com/)
-   - Naviguez vers **Pages** > **Create a project**
-   - Sélectionnez **Connect to Git**
-   - Autorisez Cloudflare à accéder à votre repository GitHub/GitLab
-
-2. **Configuration du build** :
-   - **Framework preset** : `None` (site statique)
+1. Créez un nouveau projet Pages dans Cloudflare
+2. Connectez le repository Git
+3. Configuration :
+   - **Root directory** : `matrix-spreads`
+   - **Build output directory** : `/` (ou laisser vide)
    - **Build command** : (laisser vide)
-   - **Build output directory** : `/` (racine)
-   - **Root directory** : `/` (racine)
+4. Ajoutez le domaine personnalisé : `matrix.oxo-reporting.ae`
 
-3. **Variables d'environnement** (si nécessaire) :
-   - Aucune variable d'environnement requise pour ce projet
+### Application 2 : matrix-pages
 
-4. **Déploiement** :
-   - Cloudflare Pages déploiera automatiquement à chaque push sur la branche principale
-   - Vous recevrez une URL de type : `https://votre-projet.pages.dev`
-
-### URLs des pages :
-
-- Page principale (spreads) : `https://votre-projet.pages.dev/index.html`
-- Page pages : `https://votre-projet.pages.dev/pages.html`
-
-### Configuration personnalisée (optionnel) :
-
-Si vous souhaitez utiliser un domaine personnalisé :
-- Allez dans **Custom domains** dans les paramètres du projet
-- Ajoutez votre domaine et suivez les instructions DNS
+1. Créez un nouveau projet Pages dans Cloudflare
+2. Connectez le **même** repository Git
+3. Configuration :
+   - **Root directory** : `matrix-pages`
+   - **Build output directory** : `/` (ou laisser vide)
+   - **Build command** : (laisser vide)
+4. Ajoutez le domaine personnalisé : `quote.oxo-reporting.ae`
 
 ## Structure des données
 
 Les prix sont chargés dynamiquement depuis un Google Sheet :
-- `index.html` utilise le GID `619171879`
-- `pages.html` utilise le GID `441790827`
+- `matrix-spreads/index.html` utilise le GID `619171879`
+- `matrix-pages/index.html` utilise le GID `441790827`
 - Les taux de change sont chargés depuis l'onglet "Devises" (GID `1246682262`)
 
 Voir `GOOGLE_SHEET_STRUCTURE.md` pour plus de détails sur la structure attendue.
-
