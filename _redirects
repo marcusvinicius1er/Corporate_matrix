@@ -3,11 +3,13 @@
 # Documentation: https://developers.cloudflare.com/pages/configuration/redirects/
 
 # Note: Ce fichier s'applique à toutes les applications Pages du repository
-# Pour une configuration spécifique par application, utilisez Bulk Redirects dans Cloudflare Dashboard
+# Pour une configuration spécifique par application/domaine, utilisez Bulk Redirects dans Cloudflare Dashboard
+# Rules > URL Forwarding > Bulk Redirects
 
-# Pour servir pages.html comme index (proxying avec code 200)
-# Cette règle servira pages.html quand on accède à la racine /
-# ATTENTION: Cela s'appliquera à TOUTES les applications Pages du repository
-# Si vous voulez que ce soit spécifique à quote.oxo-reporting.ae, utilisez Bulk Redirects dans Cloudflare Dashboard
-/  /pages.html  200
+# Pour servir pages.html comme index UNIQUEMENT pour quote.oxo-reporting.ae :
+# 1. Allez dans Cloudflare Dashboard > Rules > URL Forwarding > Bulk Redirects
+# 2. Créez une règle :
+#    - Source URL: quote.oxo-reporting.ae/
+#    - Destination URL: quote.oxo-reporting.ae/pages.html
+#    - Status code: 200 (pour servir directement sans redirect visible)
 
