@@ -64,8 +64,6 @@
     .opt-row--active td{background:#eef6f8}
     .opt-flag{display:inline-block;margin-left:8px;font:700 10px/1 Montserrat;letter-spacing:.6px;color:var(--magenta)}
     .opt-row--active .opt-flag{color:var(--petrol)}
-    .row-invalid td{background:#fff5f5 !important;border-color:#d33f3f !important}
-    .row-invalid td .mono,.row-invalid td input[type=number]{color:#d33f3f;font-weight:700;border-color:#d33f3f !important}
     .highlight-magenta{display:inline-block;padding:0 6px;border-radius:6px;background:rgba(211,63,160,.16);color:var(--magenta);font-weight:700}
     .title-deliverable{display:block;margin-top:4px;font:600 11px/1.3 Montserrat;letter-spacing:.3px;color:var(--petrol-dark);text-transform:uppercase}
     .center{text-align:center}
@@ -73,9 +71,6 @@
     .include-toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--petrol-dark)}
     .include-toggle input{accent-color:var(--petrol)}
     .include-toggle span{white-space:nowrap}
-    .include-toggle-arabic{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--petrol-dark);padding:4px 8px;border-radius:8px;border:2px solid #22c55e;background:rgba(34,197,94,0.08)}
-    .include-toggle-arabic input{accent-color:#22c55e}
-    .include-toggle-arabic span{white-space:nowrap}
     .tag-included{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(15,76,92,.12);font:600 12px/1 Inter;color:var(--petrol)}
     .opt-quantity{font-weight:600;color:var(--petrol-dark)}
     .totals-grid{margin:26px 0 18px;display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
@@ -200,19 +195,23 @@
             <option value="AED" selected>AED</option>
           </select>
         </div>
+        <div class="controls" style="padding:10px 14px;display:flex;align-items:center;gap:12px">
+          <label for="projectRef" style="margin:0">Project reference</label>
+          <input id="projectRef" type="text" placeholder="Enter project name" aria-label="Project reference" style="width:320px;padding:10px 12px;font:600 15px/1.1 Inter;border-radius:12px;border:1.5px solid var(--line);background:#fff;box-shadow:inset 0 1px 2px rgba(15,76,92,.05)">
+        </div>
         <button class="btn" id="exportBtn" title="Export as PDF">Download PDF</button>
       </div>
 
       <div class="totals-grid">
         <div class="card">
-          <div class="card-heading">Base package (1 → 6)</div>
+          <div class="card-heading">Base package (1 → 5)</div>
           <strong id="totalBase">AED 0</strong>
-          <small>Workshop, concept, layouts EN/AR, financial section, project management</small>
+          <small>Workshop, concept, layouts EN/AR, project management</small>
         </div>
         <div class="card">
           <div class="card-heading">Optional services</div>
           <strong id="totalOptions">AED 0</strong>
-          <small>Interactive PDF, flipbook, microsite</small>
+          <small>Interactive PDF, flipbook, microsite, proofreading</small>
         </div>
         <div class="card grand">
           <div class="card-heading">Estimated project total</div>
@@ -224,11 +223,10 @@
       <table>
         <thead>
           <tr>
-            <th style="width:40%">Section</th>
-            <th class="center" style="width:12%">Include</th>
-            <th class="right" style="width:12%">Quantity</th>
-            <th class="right" style="width:12%">Pages</th>
-            <th class="right" style="width:12%">Amount</th>
+            <th style="width:55%">Section</th>
+            <th class="center" style="width:15%">Include</th>
+            <th class="right" style="width:15%">Quantity</th>
+            <th class="right" style="width:15%">Amount</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -237,7 +235,10 @@
       <table id="optionalTable" style="margin-top:28px">
         <thead>
           <tr>
-            <th>Optional services</th>
+            <th colspan="4">Optional services</th>
+          </tr>
+          <tr>
+            <th>Section</th>
             <th class="center">Include</th>
             <th class="right">Quantity</th>
             <th class="right">Amount</th>
@@ -251,17 +252,17 @@
   <script>
     const PRICES = {
       workshop_fixed: 300,
-      design_per_page: 53,
-      layout_en_per_page: 83,
-      financial_en_per_page: 30,
-      layout_ar_per_page: 30,
-      pm_per_page: 0, // 25% calculé dynamiquement
-      interactive_pdf_per_page: 33,
-      flipbook_per_page: 45,
-      microsite_fixed: 6000
+      design_per_page: 26.5,
+      layout_en_per_page: 21.5,
+      layout_ar_per_page: 23.5,
+      pm_per_page: 12,
+      interactive_pdf_per_page: 16.5,
+      flipbook_per_page: 22.5,
+      microsite_fixed: 3800,
+      proofreading_per_page: 18.5
     };
 
-    const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/1w9ni9chAIuGjorkZzLlYiqcy9hHl_cmUDDSiQPGiAx8/gviz/tq?tqx=out:csv&gid=441790827';
+    const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/1w9ni9chAIuGjorkZzLlYiqcy9hHl_cmUDDSiQPGiAx8/gviz/tq?tqx=out:csv&gid=619171879';
     // Onglet "Devises" pour les taux de change - GID à remplacer par celui de l'onglet "Devises"
     const CURRENCY_SHEET_CSV = 'https://docs.google.com/spreadsheets/d/1w9ni9chAIuGjorkZzLlYiqcy9hHl_cmUDDSiQPGiAx8/gviz/tq?tqx=out:csv&gid=1246682262';
 
@@ -294,15 +295,12 @@
     const totalGrandEl = document.getElementById('totalGrand');
 
     const toggles = {
+      opt6: false,
       opt7: false,
       opt8: false,
       opt9: false
     };
     let includeArabic = true;
-    let includeDesign = true; // Section 2 - Report Creative Concept & Design
-    // Pages spécifiques pour les sections 3 et 4
-    let pagesSection3 = 0;
-    let pagesSection4 = 0;
 
     const BASE_SERVICES = [
       {
@@ -311,55 +309,42 @@
         key: 'workshop_fixed',
         type: 'fixed',
         description: 'Report project structuring & alignment, brand content strategy benchmarking & deployment, OXO process training (TOM collaborative platform).',
-        quantity: () => '—',
-        hasSpecificPages: false
+        quantity: () => '—'
       },
       {
         id: 'base2',
         title: '2. Report Creative Concept & Design',
         key: 'design_per_page',
         type: 'per_page',
-        description: 'Design proposals ×2, moodboards, visual concept mock-ups, icons, tables, diagrams & graphs.',
-        hasSpecificPages: false
+        description: 'Design proposals ×2, moodboards, visual concept mock-ups, icons, tables, diagrams & graphs.'
       },
       {
         id: 'base3',
-        title: '3. Integrated Report Layout – <span class="highlight-magenta">English</span>',
+        title: '3. Digital-first Integrated <span class="highlight-magenta">Report Layout English</span>.<span class="title-deliverable">Deliverable: HD Web PDF with hyperlinks</span>',
         key: 'layout_en_per_page',
         type: 'per_page',
-        description: 'HD web PDF with hyperlinks. Layout of integrated report.',
-        hasSpecificPages: true
+        description: 'HD web PDF with hyperlinks. Layout of integrated report – 100–150 pages. Versioning per part (cover, executive messages, economic performance, sustainability, governance, workplace, community, environment, innovation/back cover).'
       },
       {
         id: 'base4',
-        title: '4. Integrated Report Financial section – <span class="highlight-magenta">English</span>',
-        key: 'financial_en_per_page',
+        title: '4. Digital-first Integrated <span class="highlight-magenta">Report Layout Arabic</span>.<span class="title-deliverable">Deliverable: HD Web PDF with hyperlinks</span>',
+        key: 'layout_ar_per_page',
         type: 'per_page',
-        description: 'Financial section layout in English.',
-        hasSpecificPages: true
+        description: 'Arabic version – identical structure, HD web PDF with hyperlinks.'
       },
       {
         id: 'base5',
-        title: '5. Integrated Report Layout – <span class="highlight-magenta">Arabic</span>',
-        key: 'layout_ar_per_page',
-        type: 'per_page',
-        description: 'Arabic version – identical structure, HD web PDF with hyperlinks.',
-        hasSpecificPages: false
-      },
-      {
-        id: 'base6',
-        title: '6. Project Management',
+        title: '5. Project Management',
         key: 'pm_per_page',
         type: 'per_page',
-        description: 'Dedicated project manager. Technical coordination & advisory (25% of design & layout).',
-        hasSpecificPages: false
+        description: 'Dedicated project manager. Technical coordination & advisory (25% of design & layout).'
       }
     ];
 
     const OPTIONAL_SERVICES = [
       {
-        id: 'opt7',
-        title: '7. Native Interactive PDF (up to 8 animations)',
+        id: 'opt6',
+        title: '6. Native Interactive PDF (up to 8 animations)',
         key: 'interactive_pdf_per_page',
         type: 'optional_per_page',
         description: 'Pre-defined animations per design proposal; offline interactivity.',
@@ -369,8 +354,8 @@
         ]
       },
       {
-        id: 'opt8',
-        title: '8. Interactive Flipbook (up to 10 animations)',
+        id: 'opt7',
+        title: '7. Interactive Flipbook (up to 10 animations)',
         key: 'flipbook_per_page',
         type: 'optional_per_page',
         description: 'Interactive flipbook mirroring the report navigation.',
@@ -380,8 +365,8 @@
         ]
       },
       {
-        id: 'opt9',
-        title: '9. Microsite (one-page website)',
+        id: 'opt8',
+        title: '8. Microsite (one-page website)',
         key: 'microsite_fixed',
         type: 'optional_fixed',
         description: 'One-page microsite hosting highlight modules and leadership messages.',
@@ -391,6 +376,13 @@
           ['Velogic 2025', 'https://integratedreport.velogic.net/2025/']
         ],
         quantity: () => '1 project'
+      },
+      {
+        id: 'opt9',
+        title: '9. English Proofreading',
+        key: 'proofreading_per_page',
+        type: 'optional_per_page',
+        description: 'Proofreading of non-financial sections (no copy-editing or re-writing).'
       }
     ];
 
@@ -426,16 +418,14 @@
       return `<ul class="link-list">${items.map(([label, url]) => `<li><a href="${url}" target="_blank" rel="noopener">${label}</a></li>`).join('')}</ul>`;
     }
 
-    function row(title, desc, includeHtml, qty, pagesInput, amount, serviceId, invalid = false) {
-      const invalidClass = invalid ? ' row-invalid' : '';
-      return `<tr class="${invalidClass}">
+    function row(title, desc, includeHtml, qty, amount) {
+      return `<tr>
         <td>
           <div class="section-label">${title}</div>
           ${desc ? `<div class="section-note">${desc}</div>` : ''}
         </td>
         <td class="include-cell">${includeHtml}</td>
         <td class="right">${qty}</td>
-        <td class="right">${pagesInput || '—'}</td>
         <td class="right mono">${fmt(amount)}</td>
       </tr>`;
     }
@@ -460,55 +450,36 @@
     function renderBaseRows(pages, optionalTotals = {}) {
       let subtotal = 0;
       const amountByIdUSD = {};
-      // Validation : pagesSection3 + pagesSection4 doit égaler pages
-      const pagesTotal = pagesSection3 + pagesSection4;
-      const isValidPages = pagesTotal === pages && pages > 0;
-      
       const html = BASE_SERVICES.map(service => {
         const unit = PRICES[service.key];
-        const isOptionalArabic = service.id === 'base5';
-        const isOptionalDesign = service.id === 'base2';
-        const isIncluded = isOptionalArabic ? includeArabic : (isOptionalDesign ? includeDesign : true);
-        let includeMarkup = '<span class="tag-included">Included</span>';
-        if (isOptionalArabic) {
-          includeMarkup = `<label class="include-toggle-arabic"><input type="checkbox" id="includeArabic" ${includeArabic ? 'checked' : ''}><span>Include</span></label>`;
-        } else if (isOptionalDesign) {
-          includeMarkup = `<label class="include-toggle-arabic"><input type="checkbox" id="includeDesign" ${includeDesign ? 'checked' : ''}><span>Include</span></label>`;
-        }
-        
-        let qtyDisplay = '—';
-        let pagesInput = '—';
+        const isOptionalArabic = service.id === 'base4';
+        const isIncluded = isOptionalArabic ? includeArabic : true;
+        const includeMarkup = isOptionalArabic
+          ? `<label class="include-toggle"><input type="checkbox" id="includeArabic" ${includeArabic ? 'checked' : ''}><span>Include</span></label>`
+          : '<span class="tag-included">Included</span>';
+        const qtyRaw = formatQuantity(service, pages);
+        let qtyDisplay = isIncluded ? qtyRaw : '—';
         let amountUSD = 0;
         let description = service.description;
-        
-        // Gérer les pages spécifiques pour les sections 3 et 4
-        let pagesToUse = pages;
-        if (service.hasSpecificPages) {
-          const invalidStyle = !isValidPages && pages > 0 ? 'border-color:#d33f3f !important;color:#d33f3f;font-weight:700;' : '';
-          if (service.id === 'base3') {
-            pagesToUse = pagesSection3;
-            pagesInput = `<input type="number" id="pagesSection3" min="0" step="1" value="${pagesSection3}" style="width:80px;padding:6px;border-radius:6px;border:1.5px solid var(--line);text-align:right;${invalidStyle}" />`;
-          } else if (service.id === 'base4') {
-            pagesToUse = pagesSection4;
-            pagesInput = `<input type="number" id="pagesSection4" min="0" step="1" value="${pagesSection4}" style="width:80px;padding:6px;border-radius:6px;border:1.5px solid var(--line);text-align:right;${invalidStyle}" />`;
-          }
+        if (service.id === 'base3' && pages > 0 && typeof description === 'string') {
+          const pagesText = `${pages} ${pages === 1 ? 'page' : 'pages'}`;
+          description = description.replace(/100–150 pages/gi, `${pagesText}`);
         }
 
         if (isIncluded) {
-          if (service.id === 'base6') {
-            // Project Management = 25% de base2, base3, base4 + optionnels
+          if (service.id === 'base5') {
             const eligibleTotalUSD =
               (amountByIdUSD['base2'] || 0) +
               (amountByIdUSD['base3'] || 0) +
               (amountByIdUSD['base4'] || 0) +
+              (optionalTotals['opt6'] || 0) +
               (optionalTotals['opt7'] || 0) +
-              (optionalTotals['opt8'] || 0) +
-              (optionalTotals['opt9'] || 0);
+              (optionalTotals['opt8'] || 0);
             amountUSD = eligibleTotalUSD * 0.25;
             qtyDisplay = '25%';
           } else {
-            amountUSD = calculateAmount(unit, service.type, pagesToUse);
-            if (pagesToUse <= 0 && service.type.includes('fixed')) {
+            amountUSD = calculateAmount(unit, service.type, pages);
+            if (pages <= 0 && service.type.includes('fixed')) {
               amountUSD = 0;
             }
             if (service.id === 'base2' && pages > 0) {
@@ -517,20 +488,16 @@
                 amountUSD = Math.max(amountUSD, minPrice);
               }
             }
-            qtyDisplay = formatQuantity(service, pagesToUse);
           }
         }
-        
         amountByIdUSD[service.id] = amountUSD;
         const amountDisplay = convertAmount(amountUSD);
         subtotal += amountDisplay;
-        // Marquer les sections 3 et 4 comme invalides si la validation échoue
-        const isInvalid = (service.id === 'base3' || service.id === 'base4') && !isValidPages && pages > 0;
-        return row(service.title, description, includeMarkup, qtyDisplay, pagesInput, amountDisplay, service.id, isInvalid);
+        return row(service.title, description, includeMarkup, qtyDisplay, amountDisplay);
       }).join('');
 
-      const subtotalRow = `<tr class="summary-row"><td colspan="4" class="right">TOTAL SECTIONS 1 TO 6</td><td class="right mono">${fmt(subtotal)}</td></tr>`;
-      return { html: html + subtotalRow, subtotal, isValidPages };
+      const subtotalRow = `<tr class="summary-row"><td colspan="3" class="right">TOTAL SECTIONS 1 TO 5</td><td class="right mono">${fmt(subtotal)}</td></tr>`;
+      return { html: html + subtotalRow, subtotal };
     }
 
     function renderOptionalRows(pages) {
@@ -556,35 +523,10 @@
     }
 
     function attachBaseHandlers() {
-      const checkboxArabic = document.getElementById('includeArabic');
-      if (checkboxArabic) {
-        checkboxArabic.addEventListener('change', (event) => {
+      const checkbox = document.getElementById('includeArabic');
+      if (checkbox) {
+        checkbox.addEventListener('change', (event) => {
           includeArabic = event.target.checked;
-          render();
-        });
-      }
-      
-      const checkboxDesign = document.getElementById('includeDesign');
-      if (checkboxDesign) {
-        checkboxDesign.addEventListener('change', (event) => {
-          includeDesign = event.target.checked;
-          render();
-        });
-      }
-      
-      // Handlers pour les pages spécifiques des sections 3 et 4
-      const pages3Input = document.getElementById('pagesSection3');
-      if (pages3Input) {
-        pages3Input.addEventListener('input', (event) => {
-          pagesSection3 = Math.max(0, Number(event.target.value) || 0);
-          render();
-        });
-      }
-      
-      const pages4Input = document.getElementById('pagesSection4');
-      if (pages4Input) {
-        pages4Input.addEventListener('input', (event) => {
-          pagesSection4 = Math.max(0, Number(event.target.value) || 0);
           render();
         });
       }
@@ -610,6 +552,7 @@
 
       controlsBox.classList.toggle('is-missing', missing);
       pagesHint.classList.toggle('hidden', !missing);
+      exportBtn.disabled = missing;
 
       const optional = renderOptionalRows(pages);
       const base = renderBaseRows(pages, optional.totalsById);
@@ -621,11 +564,6 @@
       totalBaseEl.textContent = fmt(base.subtotal);
       totalOptionsEl.textContent = fmt(optional.total);
       totalGrandEl.textContent = fmt(base.subtotal + optional.total);
-
-      // Désactiver le bouton si pages manquantes OU validation des pages 3+4 échoue
-      const pagesTotal = pagesSection3 + pagesSection4;
-      const isValidPages = pagesTotal === pages && pages > 0;
-      exportBtn.disabled = missing || !isValidPages;
 
       attachBaseHandlers();
       attachOptionHandlers();
@@ -724,13 +662,13 @@
         const labelToKey = {
           [normalizeLabel('Corporate Report Project Workshop')]: 'workshop_fixed',
           [normalizeLabel('Report Creative Concept & Design')]: 'design_per_page',
-          [normalizeLabel('Integrated Report Layout – English')]: 'layout_en_per_page',
-          [normalizeLabel('Integrated Report Financial section – English')]: 'financial_en_per_page',
-          [normalizeLabel('Integrated Report Layout – Arabic')]: 'layout_ar_per_page',
+          [normalizeLabel('Digital-first Integrated Report Layout – English')]: 'layout_en_per_page',
+          [normalizeLabel('Digital-first Integrated Report Layout – Arabic')]: 'layout_ar_per_page',
           [normalizeLabel('Project Management')]: 'pm_per_page',
           [normalizeLabel('Native Interactive PDF')]: 'interactive_pdf_per_page',
           [normalizeLabel('Interactive Flipbook')]: 'flipbook_per_page',
-          [normalizeLabel('Microsite')]: 'microsite_fixed'
+          [normalizeLabel('Microsite')]: 'microsite_fixed',
+          [normalizeLabel('English Proofreading')]: 'proofreading_per_page'
         };
 
         Object.entries(labelToKey).forEach(([slug, key]) => {
