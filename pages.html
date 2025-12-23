@@ -278,6 +278,8 @@
     let currentCurrency = 'AED';
     let exchangeRates = { USD: 1, AED: 1 }; // Taux par défaut = 1 si non trouvé dans le sheet
     let minimums = {}; // Minimums par service (ex: { 'design_per_page': 1800 })
+    let priceTiers = {}; // Tranches de prix par service (ex: { 'design_per_page': { '1-80': 1800, '81-200': 1700, '>200': 3000 } })
+    let ratioTiers = {}; // Tranches de ratio par service (ex: { 'pm_per_page': { '1-80': 0.05, '81-200': 0.05, '>200': 0.04 } })
 
     const fmt = (n, currency = currentCurrency) => {
       return new Intl.NumberFormat('en-US', {style: 'currency', currency: currency, maximumFractionDigits: 0}).format(n);
@@ -406,6 +408,51 @@
       return type.includes('fixed') ? value : value * pages;
     }
 
+    // Nouvelle fonction pour calculer selon les tranches de prix
+    function calculateAmountWithTiers(serviceKey, pages) {
+      if (pages <= 0) return 0;
+      const tiers = priceTiers[serviceKey];
+      if (!tiers) {
+        // Pas de tranches définies, utiliser le prix unitaire
+        const unitPrice = PRICES[serviceKey];
+        return calculateAmount(unitPrice, 'per_page', pages);
+      }
+      
+      // Déterminer quelle tranche utiliser
+      if (pages <= 80 && tiers['1-80']) {
+        return tiers['1-80'];
+      } else if (pages <= 200 && tiers['81-200']) {
+        return tiers['81-200'];
+      } else if (pages > 200 && tiers['>200']) {
+        return tiers['>200'];
+      }
+      
+      // Fallback sur le prix unitaire si aucune tranche ne correspond
+      const unitPrice = PRICES[serviceKey];
+      return calculateAmount(unitPrice, 'per_page', pages);
+    }
+
+    // Nouvelle fonction pour obtenir le ratio selon les tranches
+    function getRatioByTier(serviceKey, pages) {
+      const tiers = ratioTiers[serviceKey];
+      if (!tiers) {
+        // Pas de tranches définies, utiliser la valeur par défaut (0.25 = 25%)
+        return 0.25;
+      }
+      
+      // Déterminer quelle tranche utiliser
+      if (pages <= 80 && tiers['1-80']) {
+        return tiers['1-80'];
+      } else if (pages <= 200 && tiers['81-200']) {
+        return tiers['81-200'];
+      } else if (pages > 200 && tiers['>200']) {
+        return tiers['>200'];
+      }
+      
+      // Fallback sur 25%
+      return 0.25;
+    }
+
     function formatQuantity(service, pages) {
       if (typeof service.quantity === 'function') {
         return service.quantity(pages);
@@ -477,6 +524,7 @@
 
         if (isIncluded) {
           if (service.id === 'base5') {
+            // Project Management : utiliser le ratio par tranche
             const eligibleTotalUSD =
               (amountByIdUSD['base2'] || 0) +
               (amountByIdUSD['base3'] || 0) +
@@ -484,17 +532,27 @@
               (optionalTotals['opt6'] || 0) +
               (optionalTotals['opt7'] || 0) +
               (optionalTotals['opt8'] || 0);
-            amountUSD = eligibleTotalUSD * 0.25;
-            qtyDisplay = '25%';
+            
+            const ratio = getRatioByTier(service.key, pages);
+            amountUSD = eligibleTotalUSD * ratio;
+            const ratioPercent = Math.round(ratio * 100);
+            qtyDisplay = `${ratioPercent}%`;
           } else {
-            amountUSD = calculateAmount(unit, service.type, pages);
-            if (pages <= 0 && service.type.includes('fixed')) {
-              amountUSD = 0;
-            }
-            if (service.id === 'base2' && pages > 0) {
-              const minPrice = minimums[service.key];
-              if (minPrice && minPrice > 0) {
-                amountUSD = Math.max(amountUSD, minPrice);
+            // Utiliser le calcul par tranches pour les services qui en ont
+            if (service.id === 'base2' && priceTiers[service.key]) {
+              // Section 2 : Report Creative Concept & Design utilise les tranches
+              amountUSD = calculateAmountWithTiers(service.key, pages);
+            } else {
+              amountUSD = calculateAmount(unit, service.type, pages);
+              if (pages <= 0 && service.type.includes('fixed')) {
+                amountUSD = 0;
+              }
+              // Garder le minimum comme fallback pour les services qui n'ont pas de tranches
+              if (service.id === 'base2' && pages > 0) {
+                const minPrice = minimums[service.key];
+                if (minPrice && minPrice > 0 && !priceTiers[service.key]) {
+                  amountUSD = Math.max(amountUSD, minPrice);
+                }
               }
             }
           }
@@ -649,12 +707,18 @@
           .filter(cols => cols.length >= 4);
 
         const byLabel = new Map();
-        rows.forEach(([section, label, type, price]) => {
-          // Gérer les nombres avec virgule (format européen) ou point (format US)
-          let cleaned = (price || '').trim();
-          cleaned = cleaned.replace(/,/g, '.'); // Convertir virgule en point
-          cleaned = cleaned.replace(/[^\d.-]/g, ''); // Garder seulement chiffres, points, tirets
-          const numeric = cleaned === '' ? NaN : Number(cleaned);
+        rows.forEach((cols) => {
+          const [section, label, type, price, tier1, tier2, tier3] = cols;
+          
+          // Fonction helper pour nettoyer les nombres
+          const cleanNumber = (val) => {
+            let cleaned = (val || '').trim();
+            cleaned = cleaned.replace(/,/g, '.'); // Convertir virgule en point
+            cleaned = cleaned.replace(/[^\d.-]/g, ''); // Garder seulement chiffres, points, tirets
+            return cleaned === '' ? NaN : Number(cleaned);
+          };
+          
+          const numeric = cleanNumber(price);
           const slug = normalizeLabel(label);
           
           // Charger les minimums depuis la section "MINIMUMS"
@@ -671,6 +735,46 @@
             }
           } else if (!Number.isNaN(numeric) && slug) {
             byLabel.set(slug, { type, price: numeric });
+            
+            // Charger les tranches de prix si elles existent (colonnes E, F, G)
+            if (tier1 || tier2 || tier3) {
+              const tier1Val = cleanNumber(tier1);
+              const tier2Val = cleanNumber(tier2);
+              const tier3Val = cleanNumber(tier3);
+              
+              const labelToKey = {
+                [normalizeLabel('Report Creative Concept & Design')]: 'design_per_page',
+                [normalizeLabel('Digital-first Integrated Report Layout – English')]: 'layout_en_per_page',
+                [normalizeLabel('Digital-first Integrated Report Layout – Arabic')]: 'layout_ar_per_page',
+                [normalizeLabel('Integrated Report Financial section – English')]: 'financial_en_per_page',
+                [normalizeLabel('Project Management')]: 'pm_per_page',
+                [normalizeLabel('Native Interactive PDF')]: 'interactive_pdf_per_page',
+                [normalizeLabel('Interactive Flipbook')]: 'flipbook_per_page',
+                [normalizeLabel('Microsite')]: 'microsite_fixed'
+              };
+              
+              const key = labelToKey[slug];
+              if (key) {
+                // Vérifier si c'est un ratio (type = "ratio")
+                const isRatio = (type || '').toLowerCase().trim() === 'ratio';
+                
+                if (isRatio) {
+                  // Stocker comme ratio (diviser par 100 si nécessaire)
+                  ratioTiers[key] = {};
+                  if (!Number.isNaN(tier1Val) && tier1Val > 0) ratioTiers[key]['1-80'] = tier1Val > 1 ? tier1Val / 100 : tier1Val;
+                  if (!Number.isNaN(tier2Val) && tier2Val > 0) ratioTiers[key]['81-200'] = tier2Val > 1 ? tier2Val / 100 : tier2Val;
+                  if (!Number.isNaN(tier3Val) && tier3Val > 0) ratioTiers[key]['>200'] = tier3Val > 1 ? tier3Val / 100 : tier3Val;
+                  console.log(`✓ Ratio tiers loaded for ${key}:`, ratioTiers[key]);
+                } else {
+                  // Stocker comme prix fixe
+                  priceTiers[key] = {};
+                  if (!Number.isNaN(tier1Val) && tier1Val > 0) priceTiers[key]['1-80'] = tier1Val;
+                  if (!Number.isNaN(tier2Val) && tier2Val > 0) priceTiers[key]['81-200'] = tier2Val;
+                  if (!Number.isNaN(tier3Val) && tier3Val > 0) priceTiers[key]['>200'] = tier3Val;
+                  console.log(`✓ Price tiers loaded for ${key}:`, priceTiers[key]);
+                }
+              }
+            }
           }
         });
 
