@@ -231,7 +231,7 @@
           <label for="currencySelect">Currency</label>
           <select id="currencySelect" aria-label="Select currency">
             <option value="USD">USD</option>
-            <option value="AED">AED</option>
+            <option value="AED" selected>AED</option>
           </select>
         </div>
         <button class="btn" id="exportBtn" title="Export as PDF">Download PDF</button>
@@ -481,7 +481,7 @@
     // Onglet "Devises" pour les taux de change - GID à remplacer par celui de l'onglet "Devises"
     const CURRENCY_SHEET_CSV = 'https://docs.google.com/spreadsheets/d/1w9ni9chAIuGjorkZzLlYiqcy9hHl_cmUDDSiQPGiAx8/gviz/tq?tqx=out:csv&gid=1246682262';
 
-    let currentCurrency = 'USD';
+    let currentCurrency = 'AED';
     let exchangeRates = { USD: 1, AED: 1 }; // Taux par défaut = 1 si non trouvé dans le sheet
     let minimums = {}; // Minimums par service (ex: { 'design_per_spread': 1800 })
 
@@ -682,8 +682,12 @@
               (optionalTotals['opt6'] || 0) +
               (optionalTotals['opt7'] || 0) +
               (optionalTotals['opt8'] || 0);
-            amountUSD = eligibleTotalUSD * 0.25;
-            qtyDisplay = '25%';
+            // Utiliser le pourcentage depuis PRICES (chargé depuis le Google Sheet)
+            // Vérifier si la valeur existe dans PRICES (même si c'est 0)
+            const pmPercentage = (service.key in PRICES) ? PRICES[service.key] : 0.25; // Par défaut 25% si non trouvé
+            console.log(`💰 Project Management calculation: eligibleTotalUSD=${eligibleTotalUSD}, pmPercentage=${pmPercentage} (${pmPercentage * 100}%)`);
+            amountUSD = eligibleTotalUSD * pmPercentage;
+            qtyDisplay = `${Math.round(pmPercentage * 100)}%`;
           } else {
             amountUSD = calculateAmount(unit, service.type, spreads);
             if (spreads <= 0 && service.type.includes('fixed')) {
@@ -832,7 +836,11 @@
 
     (async function loadPrices() {
       try {
-        const res = await fetch(SHEET_CSV, { cache: 'no-store' });
+        // Ajouter un timestamp pour forcer le rechargement
+        const timestamp = new Date().getTime();
+        const urlWithCache = `${SHEET_CSV}&t=${timestamp}`;
+        console.log(`🔗 Fetching prices from: ${SHEET_CSV}`);
+        const res = await fetch(urlWithCache, { cache: 'no-store' });
         if (!res.ok) throw new Error('fetch failed');
         const csv = await res.text();
         const lines = csv.trim().split(/\r?\n/);
@@ -841,6 +849,8 @@
           .filter(cols => cols.length >= 4);
 
         const byLabel = new Map();
+        console.log('📊 Loading prices from Google Sheet (GID: 619171879)...');
+        console.log(`📋 Total rows found: ${rows.length}`);
         rows.forEach(([section, label, type, price]) => {
           // Gérer les nombres avec virgule (format européen) ou point (format US)
           let cleaned = (price || '').trim();
@@ -863,8 +873,12 @@
             }
           } else if (!Number.isNaN(numeric) && slug) {
             byLabel.set(slug, { type, price: numeric });
+            console.log(`  → Found: "${label}" → slug: "${slug}" → price: ${numeric}`);
           }
         });
+        
+        console.log(`📦 Total prices loaded in byLabel: ${byLabel.size}`);
+        console.log('📋 All slugs found in Google Sheet:', Array.from(byLabel.keys()));
 
         const labelToKey = {
           [normalizeLabel('Corporate Report Project Workshop')]: 'workshop_fixed',
@@ -876,15 +890,41 @@
           [normalizeLabel('Interactive Flipbook')]: 'flipbook_per_spread',
           [normalizeLabel('Microsite')]: 'microsite_fixed'
         };
+        
+        console.log('🔍 Expected slugs for mapping:', Object.keys(labelToKey));
 
         Object.entries(labelToKey).forEach(([slug, key]) => {
           const record = byLabel.get(slug);
-          if (record && key !== 'pm_per_spread') {
-            PRICES[key] = record.price;
+          console.log(`🔍 Checking: key="${key}", slug="${slug}", found=${!!record}`);
+          if (record) {
+            if (key === 'pm_per_spread') {
+              // Pour Project Management, le prix peut être un pourcentage (ex: 25 pour 25%)
+              // Si c'est un pourcentage, on le stocke tel quel, sinon on le convertit
+              let pmValue = record.price;
+              console.log(`📊 Project Management raw value from sheet: ${pmValue}`);
+              // Si la valeur est > 1, c'est probablement un pourcentage (ex: 25 pour 25%)
+              // Si c'est <= 1, c'est probablement un ratio (ex: 0.25 pour 25%)
+              if (pmValue > 1 && pmValue <= 100) {
+                pmValue = pmValue / 100; // Convertir 25 en 0.25
+                console.log(`📊 Converted ${record.price} to ${pmValue} (percentage format)`);
+              }
+              // Accepter 0 comme valeur valide
+              PRICES[key] = pmValue;
+              console.log(`✓ Project Management percentage updated: ${key} = ${pmValue} (${pmValue * 100}%) from slug: "${slug}"`);
+            } else {
+              PRICES[key] = record.price;
+              console.log(`✓ Price updated: ${key} = ${record.price} (from slug: "${slug}")`);
+            }
+          } else if (key !== 'pm_per_spread') {
+            console.warn(`⚠️ Price NOT found for: ${key} (slug: "${slug}") - using default: ${PRICES[key]}`);
+          } else {
+            console.warn(`⚠️ Project Management percentage NOT found (slug: "${slug}") - using default: 25%`);
+            console.warn(`   Available slugs in sheet:`, Array.from(byLabel.keys()));
           }
         });
         
-        console.log('Prices loaded from Google Sheet');
+        console.log('✅ Prices loaded from Google Sheet');
+        console.log('📊 Final PRICES object:', PRICES);
       } catch (err) {
         console.warn('Unable to load Google Sheet:', err);
       }
