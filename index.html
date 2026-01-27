@@ -85,6 +85,8 @@
     .link-list a{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(15,76,92,.08);color:var(--petrol);font:600 12px/1 Montserrat;text-decoration:none;transition:all .2s ease}
     .link-list a:hover{background:rgba(15,76,92,.16);color:var(--petrol-dark)}
     .no-print{display:flex}
+    .print-only{display:none}
+    .controls input[type=text]{width:320px;padding:10px 12px;font:600 15px/1.1 Inter;border-radius:12px;border:1.5px solid var(--line);background:#fff;box-shadow:inset 0 1px 2px rgba(15,76,92,.05)}
     @media print{
       @page{
         margin:16mm 14mm 18mm;
@@ -127,6 +129,9 @@
         padding:0;
       }
       .no-print{display:none !important}
+      .print-only{display:block !important;margin-bottom:16px;padding:12px 16px;background:#f5f8fa;border:1px solid rgba(15,76,92,.18);border-radius:12px}
+      .print-only-label{font:700 11px/1 Montserrat;text-transform:uppercase;letter-spacing:.45px;color:#3a4a52;margin-bottom:4px}
+      .print-only-value{font:600 15px/1.3 Inter;color:var(--petrol-dark)}
       .totals-grid{
         grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
         gap:12px;
@@ -210,6 +215,11 @@
     </header>
 
     <div class="workspace">
+      <div class="print-only" id="printProjectRef">
+        <div class="print-only-label">Project Name</div>
+        <div class="print-only-value" id="printProjectRefValue">—</div>
+      </div>
+      
       <div class="toolbar no-print">
         <div class="controls" id="spreadControl">
           <label for="spreads">Number of spreads</label>
@@ -225,6 +235,13 @@
           </select>
         </div>
         <button class="btn" id="exportBtn" title="Export as PDF">Download PDF</button>
+      </div>
+      
+      <div class="toolbar no-print" style="margin-top:12px">
+        <div class="controls" id="projectNameControl">
+          <label for="projectName">Project name</label>
+          <input id="projectName" type="text" placeholder="Enter project name" aria-label="Project name">
+        </div>
       </div>
 
       <div class="totals-grid">
@@ -409,16 +426,28 @@
         // Exposer checkAuth globalement pour initApp (AVANT la vérification)
         window.checkAuth = checkAuth;
 
+        // Détecter si on est en local (file:// ou localhost)
+        function isLocal() {
+          const hostname = window.location.hostname;
+          const protocol = window.location.protocol;
+          return protocol === 'file:' || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
+        }
+
         // Vérifier l'authentification au chargement
-        const authenticatedUser = checkAuth();
-        console.log('Auth check result:', authenticatedUser);
-        
-        if (authenticatedUser) {
-          console.log('User authenticated, showing main content');
+        if (isLocal()) {
+          console.log('Local environment detected - bypassing authentication');
           showMainContent();
         } else {
-          console.log('User not authenticated, showing login screen');
-          showLoginScreen();
+          const authenticatedUser = checkAuth();
+          console.log('Auth check result:', authenticatedUser);
+          
+          if (authenticatedUser) {
+            console.log('User authenticated, showing main content');
+            showMainContent();
+          } else {
+            console.log('User not authenticated, showing login screen');
+            showLoginScreen();
+          }
         }
 
         // Bouton de déconnexion
@@ -878,6 +907,32 @@
 
     // Exposer initApp globalement
     window.initApp = initApp;
+
+    // Handle project name input
+    (function() {
+      function initProjectName() {
+        const projectNameInput = document.getElementById('projectName');
+        const printProjectRefValue = document.getElementById('printProjectRefValue');
+        
+        if (projectNameInput && printProjectRefValue) {
+          function updatePrintProjectRef() {
+            const value = projectNameInput.value.trim();
+            printProjectRefValue.textContent = value || '—';
+          }
+          
+          projectNameInput.addEventListener('input', updatePrintProjectRef);
+          projectNameInput.addEventListener('change', updatePrintProjectRef);
+          updatePrintProjectRef(); // Initialize
+        }
+      }
+      
+      // Initialize when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initProjectName);
+      } else {
+        initProjectName();
+      }
+    })();
 
     // Initialiser l'application seulement si authentifié au chargement
     // Attendre que checkAuth soit disponible (exposé par le script d'authentification)

@@ -33,22 +33,6 @@ function initPricingMatrix(config) {
   const totalOptionsEl = document.getElementById('totalOptions');
   const totalGrandEl = document.getElementById('totalGrand');
 
-  // Vérification que tous les éléments DOM sont présents
-  if (!inputEl || !exportBtn || !controlsBox || !rowsEl || !rowsOptEl || !optionalTable || !totalBaseEl || !totalOptionsEl || !totalGrandEl) {
-    console.error('Missing DOM elements:', {
-      inputEl: !!inputEl,
-      exportBtn: !!exportBtn,
-      controlsBox: !!controlsBox,
-      rowsEl: !!rowsEl,
-      rowsOptEl: !!rowsOptEl,
-      optionalTable: !!optionalTable,
-      totalBaseEl: !!totalBaseEl,
-      totalOptionsEl: !!totalOptionsEl,
-      totalGrandEl: !!totalGrandEl
-    });
-    return;
-  }
-
   function normalizeLabel(str) {
     return str.toLowerCase()
       .normalize('NFD')
@@ -303,7 +287,6 @@ function initPricingMatrix(config) {
     render();
   })();
 
-  // Rendu initial pour afficher les tableaux même sans données
   render();
 }
 
